@@ -1,0 +1,28 @@
+{
+    "schemaVersion": 1,
+    "id": "buildevents",
+    "version": "${version}",
+    "name": "buildevents",
+    "description": "Build events prototype",
+    "authors": [
+        "VelizarBG"
+    ],
+    "contact": {},
+    "license": "MIT",
+    "icon": "assets/buildevents/icon.png",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "velizarbg.buildevents.BuildEvents"
+        ]
+    },
+    "mixins": [
+        "buildevents.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.12.12",
+        "minecraft": ">=1.20.2 <1.21",
+        "java": ">=17",
+        "fabric-api": ">=${fabric_version}"
+    }
+}

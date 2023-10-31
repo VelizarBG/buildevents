@@ -1,0 +1,8 @@
+{
+    "commands.buildevents.add.success": "Created build event '%s'",
+    "commands.buildevents.add.failed": "A build event named '%s' already exists",
+    "commands.buildevents.remove.success": "Removed build event '%s'",
+    "commands.buildevents.remove.failed": "A build event named '%s' doesn't exist",
+    "commands.buildevents.list.empty": "There aren't any ongoing build events",
+    "commands.buildevents.list.success": "There are %s ongoing build events: %s"
+}

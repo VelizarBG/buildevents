@@ -1,0 +1,14 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "velizarbg.buildevents.mixins",
+    "compatibilityLevel": "JAVA_17",
+    "mixins": [
+        "BlockItemMixin"
+    ],
+    "client": [
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}
