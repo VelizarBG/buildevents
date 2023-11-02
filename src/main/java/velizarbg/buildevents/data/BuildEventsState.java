@@ -106,6 +106,6 @@ public class BuildEventsState extends PersistentState {
 
 	public static BuildEventsState loadBuildEvents(MinecraftServer server) {
 		PersistentStateManager stateManager = server.getOverworld().getPersistentStateManager();
-		return stateManager.getOrCreate(new PersistentState.Type<>(BuildEventsState::new, compound -> readNbt(compound, server), null), "buildevents");
+		return stateManager.getOrCreate((compound) -> readNbt(compound, server), BuildEventsState::new, "buildevents");
 	}
 }

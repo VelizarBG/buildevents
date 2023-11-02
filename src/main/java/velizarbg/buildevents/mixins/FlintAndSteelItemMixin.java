@@ -17,7 +17,7 @@ import static velizarbg.buildevents.BuildEventsMod.buildEventsState;
 
 @Mixin(FlintAndSteelItem.class)
 public class FlintAndSteelItemMixin {
-	@Inject(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V"))
+	@Inject(method = "useOnBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancement/criterion/PlacedBlockCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V"))
 	private void onBlockPlaced(CallbackInfoReturnable<TypedActionResult<ItemStack>> cir, @Local PlayerEntity player, @Local World world, @Local(ordinal = 1) BlockPos pos) {
 		for (BuildEvent event : buildEventsState.placeEvents) {
 			if (event.world() == world && event.box().contains(pos.getX(), pos.getY(), pos.getZ())) {

@@ -99,9 +99,9 @@ public class BuildEventCommand {
 					.executes(context -> {
 						Set<String> events = buildEventsState.buildEvents.keySet();
 						if (events.isEmpty()) {
-							context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.empty"), false);
+							context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.empty"), false);
 						} else {
-							context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.success", events.size(), Texts.joinOrdered(events)), false);
+							context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.success", events.size(), Texts.joinOrdered(events)), false);
 						}
 						return events.size();
 					})
@@ -109,9 +109,9 @@ public class BuildEventCommand {
 						.executes(context -> {
 							Set<String> events = buildEventsState.buildEvents.activeEvents.keySet();
 							if (events.isEmpty()) {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.active.empty"), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.active.empty"), false);
 							} else {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.active.success", events.size(), Texts.joinOrdered(events)), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.active.success", events.size(), Texts.joinOrdered(events)), false);
 							}
 							return events.size();
 						})
@@ -120,9 +120,9 @@ public class BuildEventCommand {
 						.executes(context -> {
 							Set<String> events = buildEventsState.buildEvents.pausedEvents.keySet();
 							if (events.isEmpty()) {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.paused.empty"), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.paused.empty"), false);
 							} else {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.paused.success", events.size(), Texts.joinOrdered(events)), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.paused.success", events.size(), Texts.joinOrdered(events)), false);
 							}
 							return events.size();
 						})
@@ -143,7 +143,7 @@ public class BuildEventCommand {
 			buildEventsState.breakEvents.add(event);
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.add.success", eventName), true);
+		source.sendFeedback(Text.translatable("commands.buildevents.add.success", eventName), true);
 		return buildEventsState.buildEvents.size();
 	}
 
@@ -163,7 +163,7 @@ public class BuildEventCommand {
 		}
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.remove.success", eventName), true);
+		source.sendFeedback(Text.translatable("commands.buildevents.remove.success", eventName), true);
 		return buildEventsState.buildEvents.size();
 	}
 
@@ -177,10 +177,10 @@ public class BuildEventCommand {
 				buildEventsState.breakEvents.remove(event);
 
 			buildEventsState.markDirty();
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.success", eventName), true);
+			source.sendFeedback(Text.translatable("commands.buildevents.pause.success", eventName), true);
 			return 1;
 		} else {
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.ok", eventName), false);
+			source.sendFeedback(Text.translatable("commands.buildevents.pause.ok", eventName), false);
 			return 0;
 		}
 	}
@@ -195,10 +195,10 @@ public class BuildEventCommand {
 				buildEventsState.breakEvents.add(event);
 
 			buildEventsState.markDirty();
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.success", eventName), true);
+			source.sendFeedback(Text.translatable("commands.buildevents.unpause.success", eventName), true);
 			return 1;
 		} else {
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.ok", eventName), false);
+			source.sendFeedback(Text.translatable("commands.buildevents.unpause.ok", eventName), false);
 			return 0;
 		}
 	}
