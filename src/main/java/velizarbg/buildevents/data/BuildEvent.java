@@ -2,10 +2,8 @@ package velizarbg.buildevents.data;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootDataType;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextType;
 import net.minecraft.scoreboard.ScoreboardCriterion;
@@ -48,18 +46,15 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 	}
 
 	public boolean testPredicate(PlayerEntity player, BlockPos pos, ItemStack stack) {
-		LootCondition predicate = this.world.getServer().getLootManager().getElement(LootDataType.PREDICATES, this.predicate);
+		LootCondition predicate = this.world.getServer().getPredicateManager().get(this.predicate);
 		if (predicate == null) {
 			return false;
 		} else {
-			LootContextParameterSet lootContextParameterSet = new LootContextParameterSet.Builder(this.world)
-				.add(LootContextParameters.ORIGIN, Vec3d.of(pos))
-				.add(LootContextParameters.THIS_ENTITY, player)
-				.add(LootContextParameters.TOOL, stack)
-				.build(BUILD_EVENT_ACTION);
-			LootContext lootContext = new LootContext.Builder(lootContextParameterSet).build(Optional.empty());
-			lootContext.markActive(LootContext.predicate(predicate));
-			return predicate.test(lootContext);
+			LootContext.Builder builder = new LootContext.Builder(this.world)
+				.parameter(LootContextParameters.ORIGIN, Vec3d.of(pos))
+				.parameter(LootContextParameters.THIS_ENTITY, player)
+				.parameter(LootContextParameters.TOOL, stack);
+			return predicate.test(builder.build(BUILD_EVENT_ACTION));
 		}
 	}
 
