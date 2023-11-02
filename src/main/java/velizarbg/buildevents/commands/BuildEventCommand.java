@@ -10,19 +10,21 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.scoreboard.ScoreboardCriterion;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.minecraft.util.math.BlockPos;
-import velizarbg.buildevents.BuildEvents;
+import velizarbg.buildevents.data.BuildEventsState.BuildEvent;
 
 import java.util.Set;
 import java.util.function.Function;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
+import static velizarbg.buildevents.BuildEvents.buildEventsState;
 
 public class BuildEventCommand {
 	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (context, builder) -> (
@@ -55,7 +57,6 @@ public class BuildEventCommand {
 					)
 				);
 
-		// TODO: allow custom objective display name
 		dispatcher.register(
 			literal("buildevents").requires(source -> source.hasPermissionLevel(2))
 				.then(literal("add")
@@ -80,7 +81,7 @@ public class BuildEventCommand {
 				)
 				.then(literal("list")
 					.executes(context -> {
-						Set<String> events = BuildEvents.BUILD_EVENTS.keySet();
+						Set<String> events = buildEventsState.buildEvents.keySet();
 						if (events.isEmpty()) {
 							context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.empty"), false);
 						} else {
@@ -93,83 +94,46 @@ public class BuildEventCommand {
 	}
 
 	private static int addBuildEvent(ServerCommandSource source, String eventName, BlockPos from, BlockPos to, ServerWorld world, String eventType) throws CommandSyntaxException {
-		if (BuildEvents.BUILD_EVENTS.containsKey(eventName))
+		if (buildEventsState.buildEvents.containsKey(eventName))
 			throw ADD_FAILED_EXCEPTION.create(eventName);
 
-		switch (eventType) {
-			case "place" -> {
-				BuildEvents.BuildEvent event = new BuildEvents.BuildEvent(
-					world,
-					from,
-					to,
-					world
-						.getScoreboard()
-						.addObjective(
-							eventName + "_place",
-							ScoreboardCriterion.DUMMY,
-							Text.literal(eventName + "_place"),
-							ScoreboardCriterion.RenderType.INTEGER
-						),
-					null
-				);
-				BuildEvents.BUILD_EVENTS.put(eventName, event);
-				BuildEvents.PLACE_EVENTS.add(event);
-			}
-			case "break" -> {
-				BuildEvents.BuildEvent event = new BuildEvents.BuildEvent(
-					world,
-					from,
-					to,
-					null,
-					world
-						.getScoreboard()
-						.addObjective(
-							eventName + "_break",
-							ScoreboardCriterion.DUMMY,
-							Text.literal(eventName + "_break"),
-							ScoreboardCriterion.RenderType.INTEGER
-						)
-				);
-				BuildEvents.BUILD_EVENTS.put(eventName, event);
-				BuildEvents.BREAK_EVENTS.add(event);
-			}
-			case "both" -> {
-				BuildEvents.BuildEvent event = new BuildEvents.BuildEvent(
-					world,
-					from,
-					to,
-					world
-						.getScoreboard()
-						.addObjective(
-							eventName + "_place",
-							ScoreboardCriterion.DUMMY,
-							Text.literal(eventName + "_place"),
-							ScoreboardCriterion.RenderType.INTEGER
-						),
-					world
-						.getScoreboard()
-						.addObjective(
-							eventName + "_break",
-							ScoreboardCriterion.DUMMY,
-							Text.literal(eventName + "_break"),
-							ScoreboardCriterion.RenderType.INTEGER
-						));
-				BuildEvents.BUILD_EVENTS.put(eventName, event);
-				BuildEvents.PLACE_EVENTS.add(event);
-				BuildEvents.BREAK_EVENTS.add(event);
-			}
+		ScoreboardObjective placeObjective = null;
+		ScoreboardObjective breakObjective = null;
+		if (eventType.equals("both") || eventType.equals("place")) {
+			placeObjective = world.getScoreboard().addObjective(
+				eventName + "_place",
+				ScoreboardCriterion.DUMMY,
+				Text.literal(eventName + "_place"),
+				ScoreboardCriterion.RenderType.INTEGER
+			);
 		}
+		if (eventType.equals("both") || eventType.equals("break")) {
+			breakObjective = world.getScoreboard().addObjective(
+				eventName + "_break",
+				ScoreboardCriterion.DUMMY,
+				Text.literal(eventName + "_break"),
+				ScoreboardCriterion.RenderType.INTEGER
+			);
+		}
+		BuildEvent event = new BuildEvent(world, from, to, placeObjective, breakObjective);
+		buildEventsState.buildEvents.put(eventName, event);
+		if (placeObjective != null)
+			buildEventsState.placeEvents.add(event);
+		if (breakObjective != null)
+			buildEventsState.breakEvents.add(event);
+
+		buildEventsState.markDirty();
 		source.sendFeedback(() -> Text.translatable("commands.buildevents.add.success", eventName), false);
 		return 1;
 	}
 
 	private static int removeBuildEvent(ServerCommandSource source, String eventName, boolean removeObjectives) throws CommandSyntaxException {
-		if (!BuildEvents.BUILD_EVENTS.containsKey(eventName))
+		if (!buildEventsState.buildEvents.containsKey(eventName))
 			throw REMOVE_FAILED_EXCEPTION.create(eventName);
 
-		BuildEvents.BuildEvent event = BuildEvents.BUILD_EVENTS.remove(eventName);
-		BuildEvents.PLACE_EVENTS.remove(event);
-		BuildEvents.BREAK_EVENTS.remove(event);
+		BuildEvent event = buildEventsState.buildEvents.remove(eventName);
+		buildEventsState.placeEvents.remove(event);
+		buildEventsState.breakEvents.remove(event);
 		if (removeObjectives) {
 			ServerScoreboard scoreboard = event.world().getScoreboard();
 			if (event.placeObjective() != null)
@@ -177,6 +141,8 @@ public class BuildEventCommand {
 			if (event.breakObjective() != null)
 				scoreboard.removeObjective(event.breakObjective());
 		}
+
+		buildEventsState.markDirty();
 		source.sendFeedback(() -> Text.translatable("commands.buildevents.remove.success", eventName), false);
 		return 1;
 	}
