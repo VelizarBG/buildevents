@@ -83,9 +83,9 @@ public class BuildEventCommand {
 					.executes(context -> {
 						Set<String> events = buildEventsState.buildEvents.keySet();
 						if (events.isEmpty()) {
-							context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.empty"), false);
+							context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.empty"), false);
 						} else {
-							context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.success", events.size(), Texts.joinOrdered(events)), false);
+							context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.success", events.size(), Texts.joinOrdered(events)), false);
 						}
 						return events.size();
 					})
@@ -123,7 +123,7 @@ public class BuildEventCommand {
 			buildEventsState.breakEvents.add(event);
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.add.success", eventName), false);
+		source.sendFeedback(Text.translatable("commands.buildevents.add.success", eventName), false);
 		return 1;
 	}
 
@@ -143,7 +143,7 @@ public class BuildEventCommand {
 		}
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.remove.success", eventName), false);
+		source.sendFeedback(Text.translatable("commands.buildevents.remove.success", eventName), false);
 		return 1;
 	}
 }
