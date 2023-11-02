@@ -5,6 +5,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.scoreboard.ScoreboardCriterion;
@@ -23,6 +25,9 @@ import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class BuildEventCommand {
+	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (context, builder) -> (
+		CommandSource.suggestMatching(buildEventsState.buildEvents.keySet(), builder)
+	);
 	private static final DynamicCommandExceptionType ADD_FAILED_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.add.failed", event));
 	private static final DynamicCommandExceptionType REMOVE_FAILED_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.remove.failed", event));
 
@@ -66,6 +71,7 @@ public class BuildEventCommand {
 				)
 				.then(literal("remove")
 					.then(argument("eventName", StringArgumentType.word())
+						.suggests(SUGGESTION_PROVIDER)
 						.executes(context -> removeBuildEvent(context.getSource(), StringArgumentType.getString(context, "eventName"), false))
 						.then(literal("remove_objectives")
 							.executes(context -> removeBuildEvent(context.getSource(), StringArgumentType.getString(context, "eventName"), true))
