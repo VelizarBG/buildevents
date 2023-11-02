@@ -10,8 +10,7 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
-import net.minecraft.loot.LootDataType;
-import net.minecraft.loot.LootManager;
+import net.minecraft.loot.condition.LootConditionManager;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
@@ -41,8 +40,8 @@ public class BuildEventCommand {
 		CommandSource.suggestMatching(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
 	);
 	private static final SuggestionProvider<ServerCommandSource> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> {
-		LootManager lootManager = context.getSource().getServer().getLootManager();
-		return CommandSource.suggestIdentifiers(lootManager.getIds(LootDataType.PREDICATES), builder);
+		LootConditionManager lootConditionManager = context.getSource().getServer().getPredicateManager();
+		return CommandSource.suggestIdentifiers(lootConditionManager.getIds(), builder);
 	};
 	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_exists", event));
 	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_not_exist", event));
@@ -132,9 +131,9 @@ public class BuildEventCommand {
 					.executes(context -> {
 						Set<String> events = buildEventsState.buildEvents.keySet();
 						if (events.isEmpty()) {
-							context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.empty"), false);
+							context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.empty"), false);
 						} else {
-							context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.success", events.size(), Texts.joinOrdered(events)), false);
+							context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.success", events.size(), Texts.joinOrdered(events)), false);
 						}
 						return events.size();
 					})
@@ -142,9 +141,9 @@ public class BuildEventCommand {
 						.executes(context -> {
 							Set<String> events = buildEventsState.buildEvents.activeEvents.keySet();
 							if (events.isEmpty()) {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.active.empty"), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.active.empty"), false);
 							} else {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.active.success", events.size(), Texts.joinOrdered(events)), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.active.success", events.size(), Texts.joinOrdered(events)), false);
 							}
 							return events.size();
 						})
@@ -153,9 +152,9 @@ public class BuildEventCommand {
 						.executes(context -> {
 							Set<String> events = buildEventsState.buildEvents.pausedEvents.keySet();
 							if (events.isEmpty()) {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.paused.empty"), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.paused.empty"), false);
 							} else {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.paused.success", events.size(), Texts.joinOrdered(events)), false);
+								context.getSource().sendFeedback(Text.translatable("commands.buildevents.list.paused.success", events.size(), Texts.joinOrdered(events)), false);
 							}
 							return events.size();
 						})
@@ -176,7 +175,7 @@ public class BuildEventCommand {
 			buildEventsState.breakEvents.add(event);
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.add.success", eventName), true);
+		source.sendFeedback(Text.translatable("commands.buildevents.add.success", eventName), true);
 		return buildEventsState.buildEvents.size();
 	}
 
@@ -196,7 +195,7 @@ public class BuildEventCommand {
 		}
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.remove.success", eventName), true);
+		source.sendFeedback(Text.translatable("commands.buildevents.remove.success", eventName), true);
 		return buildEventsState.buildEvents.size();
 	}
 
@@ -210,10 +209,10 @@ public class BuildEventCommand {
 				buildEventsState.breakEvents.remove(event);
 
 			buildEventsState.markDirty();
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.success", eventName), true);
+			source.sendFeedback(Text.translatable("commands.buildevents.pause.success", eventName), true);
 			return 1;
 		} else {
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.ok", eventName), false);
+			source.sendFeedback(Text.translatable("commands.buildevents.pause.ok", eventName), false);
 			return 0;
 		}
 	}
@@ -228,10 +227,10 @@ public class BuildEventCommand {
 				buildEventsState.breakEvents.add(event);
 
 			buildEventsState.markDirty();
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.success", eventName), true);
+			source.sendFeedback(Text.translatable("commands.buildevents.unpause.success", eventName), true);
 			return 1;
 		} else {
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.ok", eventName), false);
+			source.sendFeedback(Text.translatable("commands.buildevents.unpause.ok", eventName), false);
 			return 0;
 		}
 	}
@@ -241,14 +240,14 @@ public class BuildEventCommand {
 		replaceEvent(eventName, event.withPredicate(predicate));
 
 		if (Objects.equals(event.predicate(), predicate)) {
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.set.ok", eventName), false);
+			source.sendFeedback(Text.translatable("commands.buildevents.set.ok", eventName), false);
 			return 0;
 		} else {
 			buildEventsState.markDirty();
 			if (predicate == null) {
-				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.predicate.removed", eventName), true);
+				source.sendFeedback(Text.translatable("commands.buildevents.set.predicate.removed", eventName), true);
 			} else {
-				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.predicate.success", predicate.toString(), eventName), true);
+				source.sendFeedback(Text.translatable("commands.buildevents.set.predicate.success", predicate.toString(), eventName), true);
 			}
 			return 1;
 		}
