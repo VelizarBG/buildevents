@@ -32,6 +32,7 @@ public class BuildEventCommand {
 	);
 	private static final DynamicCommandExceptionType ADD_FAILED_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.add.failed", event));
 	private static final DynamicCommandExceptionType REMOVE_FAILED_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.remove.failed", event));
+	private static final DynamicCommandExceptionType TAKEN_OBJECTIVE_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.add.taken_objective", event));
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		Function<LiteralArgumentBuilder<ServerCommandSource>, LiteralArgumentBuilder<ServerCommandSource>> constructor =
@@ -100,18 +101,26 @@ public class BuildEventCommand {
 		ScoreboardObjective placeObjective = null;
 		ScoreboardObjective breakObjective = null;
 		if (eventType.equals("both") || eventType.equals("place")) {
+			String objectiveName = eventName + "_place";
+			if (world.getScoreboard().getObjectiveNames().contains(objectiveName))
+				throw TAKEN_OBJECTIVE_EXCEPTION.create(objectiveName);
+
 			placeObjective = world.getScoreboard().addObjective(
-				eventName + "_place",
+				objectiveName,
 				ScoreboardCriterion.DUMMY,
-				Text.literal(eventName + "_place"),
+				Text.literal(objectiveName),
 				ScoreboardCriterion.RenderType.INTEGER
 			);
 		}
 		if (eventType.equals("both") || eventType.equals("break")) {
+			String objectiveName = eventName + "_break";
+			if (world.getScoreboard().getObjectiveNames().contains(objectiveName))
+				throw TAKEN_OBJECTIVE_EXCEPTION.create(objectiveName);
+
 			breakObjective = world.getScoreboard().addObjective(
-				eventName + "_break",
+				objectiveName,
 				ScoreboardCriterion.DUMMY,
-				Text.literal(eventName + "_break"),
+				Text.literal(objectiveName),
 				ScoreboardCriterion.RenderType.INTEGER
 			);
 		}

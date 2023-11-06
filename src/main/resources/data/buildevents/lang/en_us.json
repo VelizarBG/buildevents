@@ -1,6 +1,7 @@
 {
     "commands.buildevents.add.success": "Created build event '%s'",
     "commands.buildevents.add.failed": "A build event named '%s' already exists",
+    "commands.buildevents.add.taken_objective": "The '%s' objective already exists. Remove it and try again.",
     "commands.buildevents.remove.success": "Removed build event '%s'",
     "commands.buildevents.remove.failed": "A build event named '%s' doesn't exist",
     "commands.buildevents.list.empty": "There aren't any ongoing build events",
