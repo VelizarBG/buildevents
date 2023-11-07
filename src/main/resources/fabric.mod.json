@@ -2,15 +2,18 @@
     "schemaVersion": 1,
     "id": "buildevents",
     "version": "${version}",
-    "name": "buildevents",
-    "description": "Build events prototype",
+    "name": "Build Events",
+    "description": "Adds build events to track block placements and breaks within an area",
     "authors": [
         "VelizarBG"
     ],
-    "contact": {},
+    "contact": {
+        "sources": "https://github.com/VelizarBG/buildevents",
+        "issues": "https://github.com/VelizarBG/buildevents/issues"
+    },
     "license": "MIT",
     "icon": "assets/buildevents/icon.png",
-    "environment": "*",
+    "environment": "server",
     "entrypoints": {
         "main": [
             "velizarbg.buildevents.BuildEvents"
