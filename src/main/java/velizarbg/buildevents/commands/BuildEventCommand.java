@@ -9,30 +9,33 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DimensionArgumentType;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.minecraft.util.math.BlockPos;
-import velizarbg.buildevents.data.BuildEventsState.BuildEvent;
+import velizarbg.buildevents.data.BuildEvent;
 
 import java.util.Set;
 import java.util.function.Function;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
-import static velizarbg.buildevents.BuildEvents.buildEventsState;
+import static velizarbg.buildevents.BuildEventsMod.buildEventsState;
 
 public class BuildEventCommand {
 	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (context, builder) -> (
 		CommandSource.suggestMatching(buildEventsState.buildEvents.keySet(), builder)
 	);
-	private static final DynamicCommandExceptionType ADD_FAILED_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.add.failed", event));
-	private static final DynamicCommandExceptionType REMOVE_FAILED_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.remove.failed", event));
-	private static final DynamicCommandExceptionType TAKEN_OBJECTIVE_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.add.taken_objective", event));
+	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER_ACTIVE = (context, builder) -> (
+		CommandSource.suggestMatching(buildEventsState.buildEvents.activeEvents.keySet(), builder)
+	);
+	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER_PAUSED = (context, builder) -> (
+		CommandSource.suggestMatching(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
+	);
+	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_exists", event));
+	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_not_exist", event));
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		Function<LiteralArgumentBuilder<ServerCommandSource>, LiteralArgumentBuilder<ServerCommandSource>> constructor =
@@ -40,9 +43,9 @@ public class BuildEventCommand {
 				.executes(context -> addBuildEvent(
 					context.getSource(),
 					StringArgumentType.getString(context, "eventName"),
+					context.getSource().getWorld(),
 					BlockPosArgumentType.getBlockPos(context, "from"),
 					BlockPosArgumentType.getBlockPos(context, "to"),
-					context.getSource().getWorld(),
 					literal.getLiteral()
 				))
 				.then(literal("in")
@@ -50,9 +53,9 @@ public class BuildEventCommand {
 						.executes(context -> addBuildEvent(
 							context.getSource(),
 							StringArgumentType.getString(context, "eventName"),
+							DimensionArgumentType.getDimensionArgument(context, "dimension"),
 							BlockPosArgumentType.getBlockPos(context, "from"),
 							BlockPosArgumentType.getBlockPos(context, "to"),
-							DimensionArgumentType.getDimensionArgument(context, "dimension"),
 							literal.getLiteral()
 						))
 					)
@@ -80,6 +83,18 @@ public class BuildEventCommand {
 						)
 					)
 				)
+				.then(literal("pause")
+					.then(argument("eventName", StringArgumentType.word())
+						.suggests(SUGGESTION_PROVIDER_ACTIVE)
+						.executes(context -> pauseBuildEvent(context.getSource(), StringArgumentType.getString(context, "eventName")))
+					)
+				)
+				.then(literal("unpause")
+					.then(argument("eventName", StringArgumentType.word())
+						.suggests(SUGGESTION_PROVIDER_PAUSED)
+						.executes(context -> unpauseBuildEvent(context.getSource(), StringArgumentType.getString(context, "eventName")))
+					)
+				)
 				.then(literal("list")
 					.executes(context -> {
 						Set<String> events = buildEventsState.buildEvents.keySet();
@@ -90,57 +105,53 @@ public class BuildEventCommand {
 						}
 						return events.size();
 					})
+					.then(literal("active")
+						.executes(context -> {
+							Set<String> events = buildEventsState.buildEvents.activeEvents.keySet();
+							if (events.isEmpty()) {
+								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.active.empty"), false);
+							} else {
+								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.active.success", events.size(), Texts.joinOrdered(events)), false);
+							}
+							return events.size();
+						})
+					)
+					.then(literal("paused")
+						.executes(context -> {
+							Set<String> events = buildEventsState.buildEvents.pausedEvents.keySet();
+							if (events.isEmpty()) {
+								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.paused.empty"), false);
+							} else {
+								context.getSource().sendFeedback(() -> Text.translatable("commands.buildevents.list.paused.success", events.size(), Texts.joinOrdered(events)), false);
+							}
+							return events.size();
+						})
+					)
 				)
 		);
 	}
 
-	private static int addBuildEvent(ServerCommandSource source, String eventName, BlockPos from, BlockPos to, ServerWorld world, String eventType) throws CommandSyntaxException {
+	private static int addBuildEvent(ServerCommandSource source, String eventName, ServerWorld world, BlockPos from, BlockPos to, String eventType) throws CommandSyntaxException {
 		if (buildEventsState.buildEvents.containsKey(eventName))
-			throw ADD_FAILED_EXCEPTION.create(eventName);
+			throw EVENT_EXISTS_EXCEPTION.create(eventName);
 
-		ScoreboardObjective placeObjective = null;
-		ScoreboardObjective breakObjective = null;
-		if (eventType.equals("both") || eventType.equals("place")) {
-			String objectiveName = eventName + "_place";
-			if (world.getScoreboard().getObjectiveNames().contains(objectiveName))
-				throw TAKEN_OBJECTIVE_EXCEPTION.create(objectiveName);
-
-			placeObjective = world.getScoreboard().addObjective(
-				objectiveName,
-				ScoreboardCriterion.DUMMY,
-				Text.literal(objectiveName),
-				ScoreboardCriterion.RenderType.INTEGER
-			);
-		}
-		if (eventType.equals("both") || eventType.equals("break")) {
-			String objectiveName = eventName + "_break";
-			if (world.getScoreboard().getObjectiveNames().contains(objectiveName))
-				throw TAKEN_OBJECTIVE_EXCEPTION.create(objectiveName);
-
-			breakObjective = world.getScoreboard().addObjective(
-				objectiveName,
-				ScoreboardCriterion.DUMMY,
-				Text.literal(objectiveName),
-				ScoreboardCriterion.RenderType.INTEGER
-			);
-		}
-		BuildEvent event = new BuildEvent(world, from, to, placeObjective, breakObjective);
-		buildEventsState.buildEvents.put(eventName, event);
-		if (placeObjective != null)
+		BuildEvent event = BuildEvent.createBuildEvent(eventName, world, from, to, eventType);
+		buildEventsState.buildEvents.activeEvents.put(eventName, event);
+		if (event.placeObjective() != null)
 			buildEventsState.placeEvents.add(event);
-		if (breakObjective != null)
+		if (event.breakObjective() != null)
 			buildEventsState.breakEvents.add(event);
 
 		buildEventsState.markDirty();
 		source.sendFeedback(() -> Text.translatable("commands.buildevents.add.success", eventName), false);
-		return 1;
+		return buildEventsState.buildEvents.size();
 	}
 
 	private static int removeBuildEvent(ServerCommandSource source, String eventName, boolean removeObjectives) throws CommandSyntaxException {
-		if (!buildEventsState.buildEvents.containsKey(eventName))
-			throw REMOVE_FAILED_EXCEPTION.create(eventName);
-
 		BuildEvent event = buildEventsState.buildEvents.remove(eventName);
+		if (event == null)
+			throw EVENT_NOT_EXIST_EXCEPTION.create(eventName);
+
 		buildEventsState.placeEvents.remove(event);
 		buildEventsState.breakEvents.remove(event);
 		if (removeObjectives) {
@@ -153,6 +164,50 @@ public class BuildEventCommand {
 
 		buildEventsState.markDirty();
 		source.sendFeedback(() -> Text.translatable("commands.buildevents.remove.success", eventName), false);
-		return 1;
+		return buildEventsState.buildEvents.size();
+	}
+
+	private static int pauseBuildEvent(ServerCommandSource source, String eventName) throws CommandSyntaxException {
+		BuildEvent event = getOrThrow(eventName);
+		if (buildEventsState.buildEvents.activeEvents.remove(eventName) != null) {
+			buildEventsState.buildEvents.pausedEvents.put(eventName, event);
+			if (event.placeObjective() != null)
+				buildEventsState.placeEvents.remove(event);
+			if (event.breakObjective() != null)
+				buildEventsState.breakEvents.remove(event);
+
+			buildEventsState.markDirty();
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.success", eventName), false);
+			return 1;
+		} else {
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.ok", eventName), false);
+			return 0;
+		}
+	}
+
+	private static int unpauseBuildEvent(ServerCommandSource source, String eventName) throws CommandSyntaxException {
+		BuildEvent event = getOrThrow(eventName);
+		if (buildEventsState.buildEvents.pausedEvents.remove(eventName) != null) {
+			buildEventsState.buildEvents.activeEvents.put(eventName, event);
+			if (event.placeObjective() != null)
+				buildEventsState.placeEvents.add(event);
+			if (event.breakObjective() != null)
+				buildEventsState.breakEvents.add(event);
+
+			buildEventsState.markDirty();
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.success", eventName), false);
+			return 1;
+		} else {
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.ok", eventName), false);
+			return 0;
+		}
+	}
+
+	private static BuildEvent getOrThrow(String eventName) throws CommandSyntaxException {
+		BuildEvent event = buildEventsState.buildEvents.get(eventName);
+		if (event == null)
+			throw EVENT_NOT_EXIST_EXCEPTION.create(eventName);
+
+		return event;
 	}
 }

@@ -13,10 +13,10 @@
     },
     "license": "MIT",
     "icon": "assets/buildevents/icon.png",
-    "environment": "server",
+    "environment": "*",
     "entrypoints": {
         "main": [
-            "velizarbg.buildevents.BuildEvents"
+            "velizarbg.buildevents.BuildEventsMod"
         ]
     },
     "mixins": [

@@ -1,6 +1,5 @@
 package velizarbg.buildevents.data;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.nbt.NbtCompound;
@@ -9,47 +8,47 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
-import org.jetbrains.annotations.Nullable;
-import velizarbg.buildevents.BuildEvents;
+import velizarbg.buildevents.BuildEventsMod;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 public class BuildEventsState extends PersistentState {
-	public final Map<String, BuildEvent> buildEvents = Maps.newHashMap();
+	public static final int VERSION = 1;
+
+	public final BuildEventMap buildEvents = new BuildEventMap();
 	public final Set<BuildEvent> placeEvents = Sets.newHashSet();
 	public final Set<BuildEvent> breakEvents = Sets.newHashSet();
 
 	@Override
 	public NbtCompound writeNbt(NbtCompound nbt) {
-		NbtList buildEventsList = new NbtList();
-		buildEventsList.addAll(buildEvents.entrySet().stream().map(stringBuildEventEntry -> {
+		Function<Map.Entry<String, BuildEvent>, NbtCompound> serializer = stringBuildEventEntry -> {
+			String eventName = stringBuildEventEntry.getKey();
 			BuildEvent event = stringBuildEventEntry.getValue();
 			NbtCompound eventNbt = new NbtCompound();
-			eventNbt.putString("name", stringBuildEventEntry.getKey());
-			eventNbt.putString("dimension", event.world.getRegistryKey().getValue().toString());
+			eventNbt.putString("name", eventName);
+			eventNbt.putString("dimension", event.world().getRegistryKey().getValue().toString());
+			Box box = event.box();
 			NbtElement from = BlockPos.CODEC
-				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) event.box.minX, (int) event.box.minY, (int) event.box.minZ))
-				.getOrThrow(false, BuildEvents.LOGGER::warn);
+				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) box.minX, (int) box.minY, (int) box.minZ))
+				.getOrThrow(false, BuildEventsMod.LOGGER::warn);
 			NbtElement to = BlockPos.CODEC
-				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) event.box.maxX, (int) event.box.maxY, (int) event.box.maxZ))
-				.getOrThrow(false, BuildEvents.LOGGER::warn);
+				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) box.maxX, (int) box.maxY, (int) box.maxZ))
+				.getOrThrow(false, BuildEventsMod.LOGGER::warn);
 			eventNbt.put("from", from);
 			eventNbt.put("to", to);
+			boolean isPlaceEvent = event.placeObjective() != null;
+			boolean isBreakEvent = event.breakObjective() != null;
 			String type;
-			boolean isPlaceEvent = placeEvents.contains(event);
-			boolean isBreakEvent = breakEvents.contains(event);
 			if (isPlaceEvent && isBreakEvent) {
 				type = "both";
 			} else if (isPlaceEvent) {
@@ -59,80 +58,54 @@ public class BuildEventsState extends PersistentState {
 			}
 			eventNbt.putString("type", type);
 			return eventNbt;
-		}).toList());
-		nbt.put("build_events", buildEventsList);
+		};
+		NbtList activeEvents = new NbtList();
+		activeEvents.addAll(buildEvents.activeEvents.entrySet().stream().map(serializer).toList());
+		nbt.put("active_events", activeEvents);
+		NbtList pausedEvents = new NbtList();
+		pausedEvents.addAll(buildEvents.pausedEvents.entrySet().stream().map(serializer).toList());
+		nbt.put("paused_events", pausedEvents);
+		nbt.putInt("build_events_version", VERSION);
 		return nbt;
 	}
 
 	public static BuildEventsState readNbt(NbtCompound nbt, MinecraftServer server) {
-		NbtList buildEventsList = nbt.getList("build_events", NbtElement.COMPOUND_TYPE);
-		BuildEventsState buildEventsState = new BuildEventsState();
-		for (NbtElement element : buildEventsList) {
-			if (element instanceof NbtCompound eventNbt) {
-				String eventName = eventNbt.getString("name");
-				String dimension = eventNbt.getString("dimension");
-				BlockPos from = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("from")).map(Pair::getFirst)
-					.getOrThrow(false, BuildEvents.LOGGER::warn);
-				BlockPos to = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("to")).map(Pair::getFirst)
-					.getOrThrow(false, BuildEvents.LOGGER::warn);
-				String type = eventNbt.getString("type");
-				ScoreboardObjective placeObjective = null;
-				ScoreboardObjective breakObjective = null;
-				if (type.equals("both") || type.equals("place")) {
-					String objectiveName = eventName + "_place";
-					placeObjective = Optional.ofNullable(server.getScoreboard().getNullableObjective(objectiveName))
-						.orElseGet(() -> server.getScoreboard().addObjective(
-							objectiveName,
-							ScoreboardCriterion.DUMMY,
-							Text.literal(objectiveName),
-							ScoreboardCriterion.RenderType.INTEGER
-						));
+		int version = nbt.getInt("build_events_version");
+		BiConsumer<NbtList, Map<String, BuildEvent>> deserializer = (nbtList, map) -> {
+			for (NbtElement element : nbtList) {
+				if (element instanceof NbtCompound eventNbt) {
+					String eventName = eventNbt.getString("name");
+					String dimension = eventNbt.getString("dimension");
+					BlockPos from = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("from")).map(Pair::getFirst)
+						.getOrThrow(false, BuildEventsMod.LOGGER::warn);
+					BlockPos to = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("to")).map(Pair::getFirst)
+						.getOrThrow(false, BuildEventsMod.LOGGER::warn);
+					String type = eventNbt.getString("type");
+
+					ServerWorld world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.tryParse(dimension)));
+					if (world == null)
+						continue;
+
+					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type));
 				}
-				if (type.equals("both") || type.equals("break")) {
-					String objectiveName = eventName + "_break";
-					breakObjective = Optional.ofNullable(server.getScoreboard().getNullableObjective(objectiveName))
-						.orElseGet(() -> server.getScoreboard().addObjective(
-							objectiveName,
-							ScoreboardCriterion.DUMMY,
-							Text.literal(objectiveName),
-							ScoreboardCriterion.RenderType.INTEGER
-						));
-				}
-				BuildEvent event = new BuildEvent(
-					server.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.tryParse(dimension))),
-					from,
-					to,
-					placeObjective,
-					breakObjective
-				);
-				buildEventsState.buildEvents.put(eventName, event);
-				if (placeObjective != null)
-					buildEventsState.placeEvents.add(event);
-				if (breakObjective != null)
-					buildEventsState.breakEvents.add(event);
 			}
+		};
+		BuildEventsState buildEventsState = new BuildEventsState();
+		NbtList activeEventsList = nbt.getList(version >= 1 ? "active_events" : "build_events", NbtElement.COMPOUND_TYPE);
+		NbtList pausedEventsList = nbt.getList("paused_events", NbtElement.COMPOUND_TYPE);
+		deserializer.accept(activeEventsList, buildEventsState.buildEvents.activeEvents);
+		for (BuildEvent event : buildEventsState.buildEvents.activeEvents.values()) {
+			if (event.placeObjective() != null)
+				buildEventsState.placeEvents.add(event);
+			if (event.breakObjective() != null)
+				buildEventsState.breakEvents.add(event);
 		}
+		deserializer.accept(pausedEventsList, buildEventsState.buildEvents.pausedEvents);
 		return buildEventsState;
 	}
 
 	public static BuildEventsState loadBuildEvents(MinecraftServer server) {
 		PersistentStateManager stateManager = server.getOverworld().getPersistentStateManager();
 		return stateManager.getOrCreate(new PersistentState.Type<>(BuildEventsState::new, compound -> readNbt(compound, server), null), "buildevents");
-	}
-
-	public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective) {
-		public BuildEvent(ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective) {
-			this(
-				world,
-				new Box(from, to) {
-					@Override
-					public boolean contains(double x, double y, double z) {
-						return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY && z >= this.minZ && z <= this.maxZ;
-					}
-				},
-				placeObjective,
-				breakObjective
-			);
-		}
 	}
 }

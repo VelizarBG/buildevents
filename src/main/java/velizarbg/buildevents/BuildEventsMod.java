@@ -7,9 +7,10 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import velizarbg.buildevents.commands.BuildEventCommand;
+import velizarbg.buildevents.data.BuildEvent;
 import velizarbg.buildevents.data.BuildEventsState;
 
-public class BuildEvents implements ModInitializer {
+public class BuildEventsMod implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("buildevents");
 	public static BuildEventsState buildEventsState;
 
@@ -19,7 +20,7 @@ public class BuildEvents implements ModInitializer {
 			BuildEventCommand.register(dispatcher)
 		);
 		PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
-			for (BuildEventsState.BuildEvent event : buildEventsState.breakEvents) {
+			for (BuildEvent event : buildEventsState.breakEvents) {
 				if (event.world() == world && event.box().contains(pos.getX(), pos.getY(), pos.getZ())) {
 					world.getScoreboard().getPlayerScore(player.getEntityName(), event.breakObjective()).incrementScore();
 				}

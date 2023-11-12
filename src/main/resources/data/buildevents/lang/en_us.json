@@ -1,9 +1,16 @@
 {
+    "commands.buildevents.event_exists": "A build event named '%s' already exists",
+    "commands.buildevents.event_not_exist": "A build event named '%s' doesn't exist",
     "commands.buildevents.add.success": "Created build event '%s'",
-    "commands.buildevents.add.failed": "A build event named '%s' already exists",
-    "commands.buildevents.add.taken_objective": "The '%s' objective already exists. Remove it and try again.",
     "commands.buildevents.remove.success": "Removed build event '%s'",
-    "commands.buildevents.remove.failed": "A build event named '%s' doesn't exist",
-    "commands.buildevents.list.empty": "There aren't any ongoing build events",
-    "commands.buildevents.list.success": "There are %s ongoing build events: %s"
+    "commands.buildevents.pause.success": "Paused build event '%s'",
+    "commands.buildevents.pause.ok": "Build event '%s' was already paused",
+    "commands.buildevents.unpause.success": "Unpaused build event '%s'",
+    "commands.buildevents.unpause.ok": "Build event '%s' was already active",
+    "commands.buildevents.list.empty": "There aren't any build events",
+    "commands.buildevents.list.success": "There are %s build events: %s",
+    "commands.buildevents.list.active.empty": "There aren't any active build events",
+    "commands.buildevents.list.active.success": "There are %s active build events: %s",
+    "commands.buildevents.list.paused.empty": "There aren't any paused build events",
+    "commands.buildevents.list.paused.success": "There are %s paused build events: %s"
 }
