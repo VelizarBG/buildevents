@@ -143,7 +143,7 @@ public class BuildEventCommand {
 			buildEventsState.breakEvents.add(event);
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.add.success", eventName), false);
+		source.sendFeedback(() -> Text.translatable("commands.buildevents.add.success", eventName), true);
 		return buildEventsState.buildEvents.size();
 	}
 
@@ -163,7 +163,7 @@ public class BuildEventCommand {
 		}
 
 		buildEventsState.markDirty();
-		source.sendFeedback(() -> Text.translatable("commands.buildevents.remove.success", eventName), false);
+		source.sendFeedback(() -> Text.translatable("commands.buildevents.remove.success", eventName), true);
 		return buildEventsState.buildEvents.size();
 	}
 
@@ -177,7 +177,7 @@ public class BuildEventCommand {
 				buildEventsState.breakEvents.remove(event);
 
 			buildEventsState.markDirty();
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.success", eventName), false);
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.success", eventName), true);
 			return 1;
 		} else {
 			source.sendFeedback(() -> Text.translatable("commands.buildevents.pause.ok", eventName), false);
@@ -195,7 +195,7 @@ public class BuildEventCommand {
 				buildEventsState.breakEvents.add(event);
 
 			buildEventsState.markDirty();
-			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.success", eventName), false);
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.success", eventName), true);
 			return 1;
 		} else {
 			source.sendFeedback(() -> Text.translatable("commands.buildevents.unpause.ok", eventName), false);
