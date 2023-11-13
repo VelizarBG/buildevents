@@ -1,5 +1,6 @@
 plugins {
 	id 'fabric-loom' version '1.4.4'
+	id "me.shedaniel.unified-publishing" version "0.1.+"
 	id 'maven-publish'
 }
 
@@ -78,5 +79,43 @@ publishing {
 		// Notice: This block does NOT have the same function as the block in the top level.
 		// The repositories here will be used for publishing your artifact, not for
 		// retrieving dependencies.
+	}
+}
+
+unifiedPublishing {
+	project {
+		displayName.set "v$project.version"
+		releaseType.set "release"
+		gameVersions.set(["1.20.2"])
+		gameLoaders.set(["fabric"])
+
+		relations {
+			depends {
+				curseforge.set "fabric-api"
+				modrinth.set "fabric-api"
+			}
+		}
+
+		System.getenv("changelog")?.with { String changelogg ->
+			changelog.set changelogg
+		}
+
+		mainPublication tasks.remapJar
+
+		System.getenv("curse_api_key")?.with { String key ->
+			curseforge {
+				token.set key
+				id.set project.curseforge_id
+				gameVersions.addAll "Java 17"
+			}
+		}
+
+		System.getenv("modrinth_key")?.with { String key ->
+			modrinth {
+				token.set key
+				id.set project.modrinth_id
+				version = "$project.version"
+			}
+		}
 	}
 }

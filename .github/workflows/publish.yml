@@ -29,3 +29,9 @@ jobs:
         with:
           files: 'build/libs/*.jar;!build/libs/*-sources.jar'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: publish jar
+        env:
+          curse_api_key: ${{ secrets.CF_API_KEY }}
+          modrinth_key: ${{ secrets.MODRINTH_KEY }}
+          changelog: ${{ github.event.release.body }}
+        run: ./gradlew publish publishUnified --stacktrace --no-daemon
