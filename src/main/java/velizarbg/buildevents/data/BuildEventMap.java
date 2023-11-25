@@ -31,4 +31,8 @@ public class BuildEventMap {
 		combinedSet.addAll(pausedEvents.keySet());
 		return combinedSet;
 	}
+
+	public BuildEvent replace(String key, BuildEvent value) {
+		return Optional.ofNullable(activeEvents.replace(key, value)).orElseGet(() -> pausedEvents.replace(key, value));
+	}
 }

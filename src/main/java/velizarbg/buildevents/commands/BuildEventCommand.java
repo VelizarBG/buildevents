@@ -9,14 +9,20 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DimensionArgumentType;
+import net.minecraft.command.argument.IdentifierArgumentType;
+import net.minecraft.loot.LootDataType;
+import net.minecraft.loot.LootManager;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.Nullable;
 import velizarbg.buildevents.data.BuildEvent;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -34,6 +40,10 @@ public class BuildEventCommand {
 	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER_PAUSED = (context, builder) -> (
 		CommandSource.suggestMatching(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
 	);
+	private static final SuggestionProvider<ServerCommandSource> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> {
+		LootManager lootManager = context.getSource().getServer().getLootManager();
+		return CommandSource.suggestIdentifiers(lootManager.getIds(LootDataType.PREDICATES), builder);
+	};
 	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_exists", event));
 	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_not_exist", event));
 
@@ -80,6 +90,29 @@ public class BuildEventCommand {
 						.executes(context -> removeBuildEvent(context.getSource(), StringArgumentType.getString(context, "eventName"), false))
 						.then(literal("remove_objectives")
 							.executes(context -> removeBuildEvent(context.getSource(), StringArgumentType.getString(context, "eventName"), true))
+						)
+					)
+				)
+				.then(literal("set")
+					.then(argument("eventName", StringArgumentType.word())
+						.suggests(SUGGESTION_PROVIDER)
+						.then(literal("predicate")
+							.executes(context -> setEventPredicate(
+								context.getSource(),
+								StringArgumentType.getString(context, "eventName"),
+								null
+							))
+							.then(argument("predicate", IdentifierArgumentType.identifier())
+								.suggests(PREDICATE_SUGGESTION_PROVIDER)
+								.executes(context -> {
+									IdentifierArgumentType.getPredicateArgument(context, "predicate");
+									return setEventPredicate(
+										context.getSource(),
+										StringArgumentType.getString(context, "eventName"),
+										IdentifierArgumentType.getIdentifier(context, "predicate")
+									);
+								})
+							)
 						)
 					)
 				)
@@ -135,7 +168,7 @@ public class BuildEventCommand {
 		if (buildEventsState.buildEvents.containsKey(eventName))
 			throw EVENT_EXISTS_EXCEPTION.create(eventName);
 
-		BuildEvent event = BuildEvent.createBuildEvent(eventName, world, from, to, eventType);
+		BuildEvent event = BuildEvent.createBuildEvent(eventName, world, from, to, eventType, null);
 		buildEventsState.buildEvents.activeEvents.put(eventName, event);
 		if (event.placeObjective() != null)
 			buildEventsState.placeEvents.add(event);
@@ -203,11 +236,41 @@ public class BuildEventCommand {
 		}
 	}
 
+	private static int setEventPredicate(ServerCommandSource source, String eventName, @Nullable Identifier predicate) throws CommandSyntaxException {
+		BuildEvent event = getOrThrow(eventName);
+		replaceEvent(eventName, event.withPredicate(predicate));
+
+		if (Objects.equals(event.predicate(), predicate)) {
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.set.ok", eventName), false);
+			return 0;
+		} else {
+			buildEventsState.markDirty();
+			if (predicate == null) {
+				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.predicate.removed", eventName), true);
+			} else {
+				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.predicate.success", predicate.toString(), eventName), true);
+			}
+			return 1;
+		}
+	}
+
 	private static BuildEvent getOrThrow(String eventName) throws CommandSyntaxException {
 		BuildEvent event = buildEventsState.buildEvents.get(eventName);
 		if (event == null)
 			throw EVENT_NOT_EXIST_EXCEPTION.create(eventName);
 
 		return event;
+	}
+
+	private static void replaceEvent(String eventName, BuildEvent event) {
+		BuildEvent oldEvent = buildEventsState.buildEvents.replace(eventName, event);
+		if (event.placeObjective() != null) {
+			buildEventsState.placeEvents.remove(oldEvent);
+			buildEventsState.placeEvents.add(event);
+		}
+		if (event.breakObjective() != null) {
+			buildEventsState.breakEvents.remove(oldEvent);
+			buildEventsState.breakEvents.add(event);
+		}
 	}
 }

@@ -57,6 +57,9 @@ public class BuildEventsState extends PersistentState {
 				type = "break";
 			}
 			eventNbt.putString("type", type);
+			if (event.predicate() != null) {
+				eventNbt.putString("predicate", event.predicate().toString());
+			}
 			return eventNbt;
 		};
 		NbtList activeEvents = new NbtList();
@@ -81,12 +84,14 @@ public class BuildEventsState extends PersistentState {
 					BlockPos to = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("to")).map(Pair::getFirst)
 						.getOrThrow(false, BuildEventsMod.LOGGER::warn);
 					String type = eventNbt.getString("type");
+					String predicate = eventNbt.getString("predicate");
+					Identifier predicateId = predicate.isEmpty() ? null : Identifier.tryParse(predicate);
 
 					ServerWorld world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.tryParse(dimension)));
 					if (world == null)
 						continue;
 
-					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type));
+					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type, predicateId));
 				}
 			}
 		};

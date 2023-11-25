@@ -16,6 +16,8 @@ If an objective named `foo_place` exists prior to creating the `foo` event, then
 
 `/buildevents remove <eventName> [remove_objectives]`
 
+`/buildevents set <eventName> predicate [<predicate>]`
+
 `/buildevents (pause|unpause) <eventName>`
 
 `/buildevents list [active|paused]`
@@ -24,6 +26,10 @@ If an objective named `foo_place` exists prior to creating the `foo` event, then
 `/buildevents add` to create events. Optionally, end with `in <dimension>` to track actions in the specified dimension instead of the one the executor's in.
 
 `/buildevents remove` to remove events. Optionally, end with `remove_objectives` to also remove the objectives.
+
+`/buildevents set <eventName> predicate <predicate>` to attach a [predicate](https://minecraft.wiki/w/Predicate), in order to conditionally track actions. [Here](https://misode.github.io/predicate/?share=FWh0Z0tvRO) is an example for tracking specific blocks.
+
+`/buildevents set <eventName> predicate` to remove an event's predicate.
 
 `/buildevents pause` to stop tracking actions until re-enabled with `/buildevents unpause`.
 

@@ -11,18 +11,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import velizarbg.buildevents.data.BuildEvent;
-
-import static velizarbg.buildevents.BuildEventsMod.buildEventsState;
+import velizarbg.buildevents.BuildEventsMod;
 
 @Mixin(BucketItem.class)
 public class BucketItemMixin {
 	@Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V"))
-	private void onBlockPlaced(CallbackInfoReturnable<TypedActionResult<ItemStack>> cir, @Local World world, @Local PlayerEntity player, @Local(ordinal = 2) BlockPos pos) {
-		for (BuildEvent event : buildEventsState.placeEvents) {
-			if (event.world() == world && event.box().contains(pos.getX(), pos.getY(), pos.getZ())) {
-				world.getScoreboard().getPlayerScore(player.getEntityName(), event.placeObjective()).incrementScore();
-			}
-		}
+	private void onBlockPlaced(CallbackInfoReturnable<TypedActionResult<ItemStack>> cir, @Local(ordinal = 0) ItemStack stack, @Local World world, @Local PlayerEntity player, @Local(ordinal = 2) BlockPos pos) {
+		BuildEventsMod.onPlace(world, player, pos, stack);
 	}
 }
