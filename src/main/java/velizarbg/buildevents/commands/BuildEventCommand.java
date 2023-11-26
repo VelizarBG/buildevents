@@ -264,13 +264,15 @@ public class BuildEventCommand {
 
 	private static void replaceEvent(String eventName, BuildEvent event) {
 		BuildEvent oldEvent = buildEventsState.buildEvents.replace(eventName, event);
-		if (event.placeObjective() != null) {
-			buildEventsState.placeEvents.remove(oldEvent);
-			buildEventsState.placeEvents.add(event);
-		}
-		if (event.breakObjective() != null) {
-			buildEventsState.breakEvents.remove(oldEvent);
-			buildEventsState.breakEvents.add(event);
+		if (buildEventsState.buildEvents.activeEvents.containsKey(eventName)) {
+			if (event.placeObjective() != null) {
+				buildEventsState.placeEvents.remove(oldEvent);
+				buildEventsState.placeEvents.add(event);
+			}
+			if (event.breakObjective() != null) {
+				buildEventsState.breakEvents.remove(oldEvent);
+				buildEventsState.breakEvents.add(event);
+			}
 		}
 	}
 }
