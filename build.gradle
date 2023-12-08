@@ -24,7 +24,7 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modImplementation include("xyz.nucleoid:server-translations-api:${project.server_translations}") {
+	modImplementation include("fr.catcore:server-translations-api:${project.server_translations}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
 }
@@ -80,7 +80,7 @@ unifiedPublishing {
 	project {
 		displayName.set "v$project.version"
 		releaseType.set "release"
-		gameVersions.set(["1.19.4"])
+		gameVersions.set(["1.18.2"])
 		gameLoaders.set(["fabric"])
 
 		relations {

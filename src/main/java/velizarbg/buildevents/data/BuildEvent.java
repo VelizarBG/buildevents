@@ -10,7 +10,7 @@ import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -79,7 +79,7 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 			.orElseGet(() -> scoreboard.addObjective(
 				objective,
 				ScoreboardCriterion.DUMMY,
-				Text.literal(objective),
+				new LiteralText(objective),
 				ScoreboardCriterion.RenderType.INTEGER
 			));
 	}

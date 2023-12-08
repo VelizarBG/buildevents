@@ -6,13 +6,13 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.PersistentState;
 import net.minecraft.world.PersistentStateManager;
 import velizarbg.buildevents.BuildEventsMod;
@@ -87,7 +87,7 @@ public class BuildEventsState extends PersistentState {
 					String predicate = eventNbt.getString("predicate");
 					Identifier predicateId = predicate.isEmpty() ? null : Identifier.tryParse(predicate);
 
-					ServerWorld world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.tryParse(dimension)));
+					ServerWorld world = server.getWorld(RegistryKey.of(Registry.WORLD_KEY, Identifier.tryParse(dimension)));
 					if (world == null)
 						continue;
 
