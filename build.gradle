@@ -13,10 +13,6 @@ base {
 
 repositories {
 	maven { url 'https://maven.nucleoid.xyz' } // server translations
-	maven {
-		name = 'JitPack'
-		url = 'https://jitpack.io'
-	} // MixinExtras
 }
 
 dependencies {
@@ -31,8 +27,6 @@ dependencies {
 	modImplementation include("xyz.nucleoid:server-translations-api:${project.server_translations}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
-
-	include(implementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:${project.mixinextras_version}")))
 }
 
 processResources {
