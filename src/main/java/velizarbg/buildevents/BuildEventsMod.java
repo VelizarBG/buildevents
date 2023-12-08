@@ -27,7 +27,7 @@ public class BuildEventsMod implements ModInitializer {
 			for (BuildEvent event : buildEventsState.breakEvents) {
 				if (event.world() == world && event.box().contains(pos.getX(), pos.getY(), pos.getZ())
 					&& (event.predicate() == null || event.testPredicate(player, pos, player.getMainHandStack()))) {
-					world.getScoreboard().getPlayerScore(player.getEntityName(), event.breakObjective()).incrementScore();
+					world.getScoreboard().getOrCreateScore(player, event.breakObjective()).incrementScore();
 				}
 			}
 			return true;
@@ -41,7 +41,7 @@ public class BuildEventsMod implements ModInitializer {
 		for (BuildEvent event : buildEventsState.placeEvents) {
 			if (event.world() == world && event.box().contains(pos.getX(), pos.getY(), pos.getZ())
 				&& (event.predicate() == null || event.testPredicate(player, pos, stack))) {
-				world.getScoreboard().getPlayerScore(player.getEntityName(), event.placeObjective()).incrementScore();
+				world.getScoreboard().getOrCreateScore(player, event.placeObjective()).incrementScore();
 			}
 		}
 	}

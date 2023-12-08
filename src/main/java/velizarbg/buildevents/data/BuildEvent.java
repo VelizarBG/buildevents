@@ -31,7 +31,7 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 	public BuildEvent(ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
 		this(
 			world,
-			new Box(from, to) {
+			new Box(from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ()) {
 				@Override
 				public boolean contains(double x, double y, double z) {
 					return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY && z >= this.minZ && z <= this.maxZ;
@@ -85,7 +85,9 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 				objective,
 				ScoreboardCriterion.DUMMY,
 				Text.literal(objective),
-				ScoreboardCriterion.RenderType.INTEGER
+				ScoreboardCriterion.RenderType.INTEGER,
+				false,
+				null
 			));
 	}
 }
