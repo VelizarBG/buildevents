@@ -16,7 +16,7 @@ import velizarbg.buildevents.BuildEventsMod;
 @Mixin(BucketItem.class)
 public class BucketItemMixin {
 	@Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V"))
-	private void onBlockPlaced(CallbackInfoReturnable<TypedActionResult<ItemStack>> cir, @Local(ordinal = 0) ItemStack stack, @Local World world, @Local PlayerEntity player, @Local(ordinal = 2) BlockPos pos) {
+	private void onBlockPlaced(CallbackInfoReturnable<TypedActionResult<ItemStack>> cir, @Local(ordinal = 0) ItemStack stack, @Local(argsOnly = true) World world, @Local(argsOnly = true) PlayerEntity player, @Local(ordinal = 2) BlockPos pos) {
 		BuildEventsMod.onPlace(world, player, pos, stack);
 	}
 }

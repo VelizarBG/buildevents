@@ -57,7 +57,7 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 				.add(LootContextParameters.THIS_ENTITY, player)
 				.add(LootContextParameters.TOOL, stack)
 				.build(BUILD_EVENT_ACTION);
-			LootContext lootContext = new LootContext.Builder(lootContextParameterSet).build(Optional.empty());
+			LootContext lootContext = new LootContext.Builder(lootContextParameterSet).build(null);
 			lootContext.markActive(LootContext.predicate(predicate));
 			return predicate.test(lootContext);
 		}
@@ -85,9 +85,7 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 				objective,
 				ScoreboardCriterion.DUMMY,
 				Text.literal(objective),
-				ScoreboardCriterion.RenderType.INTEGER,
-				false,
-				null
+				ScoreboardCriterion.RenderType.INTEGER
 			));
 	}
 }
