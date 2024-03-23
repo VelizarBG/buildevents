@@ -14,6 +14,7 @@ import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.loot.LootDataType;
 import net.minecraft.loot.LootManager;
+import net.minecraft.scoreboard.ScoreAccess;
 import net.minecraft.scoreboard.ScoreboardEntry;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
@@ -330,7 +331,9 @@ public class BuildEventCommand {
 					for (ScoreboardEntry scoreboardEntry : server.getScoreboard().getScoreboardEntries(objective)) {
 						totalCount += scoreboardEntry.value();
 					}
-					server.getScoreboard().getOrCreateScore(TOTAL, objective).setScore(totalCount);
+					ScoreAccess score = server.getScoreboard().getOrCreateScore(TOTAL, objective);
+					score.setScore(totalCount);
+					score.setDisplayText(TOTAL.getDisplayName());
 				};
 				totalProcessor.accept(event.placeObjective());
 				totalProcessor.accept(event.breakObjective());

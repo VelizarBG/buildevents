@@ -8,8 +8,14 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.scoreboard.ReadableScoreboardScore;
+import net.minecraft.scoreboard.ScoreAccess;
+import net.minecraft.scoreboard.ScoreHolder;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -23,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public class BuildEventsState extends PersistentState {
-	public static final int VERSION = 2;
+	public static final int VERSION = 3;
 
 	public final BuildEventMap buildEvents = new BuildEventMap();
 	public final Set<BuildEvent> placeEvents = Sets.newHashSet();
@@ -100,6 +106,11 @@ public class BuildEventsState extends PersistentState {
 					}
 
 					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type, predicateId, total));
+					if (version == 2 && total) {
+						BuildEvent event = map.get(eventName);
+						updateTotal(server.getScoreboard(), event.placeObjective());
+						updateTotal(server.getScoreboard(), event.breakObjective());
+					}
 				}
 			}
 		};
@@ -120,5 +131,18 @@ public class BuildEventsState extends PersistentState {
 	public static BuildEventsState loadBuildEvents(MinecraftServer server) {
 		PersistentStateManager stateManager = server.getOverworld().getPersistentStateManager();
 		return stateManager.getOrCreate(new PersistentState.Type<>(BuildEventsState::new, compound -> readNbt(compound, server), null), "buildevents");
+	}
+	
+	private static void updateTotal(Scoreboard scoreboard, ScoreboardObjective objective) {
+		if (objective == null)
+			return;
+		ScoreHolder oldTotal = ScoreHolder.fromName(Formatting.BOLD + "Total");
+		ReadableScoreboardScore oldScore = scoreboard.getScore(oldTotal, objective);
+		if (oldScore == null)
+			return;
+		scoreboard.removeScore(oldTotal, objective);
+		ScoreAccess newScore = scoreboard.getOrCreateScore(BuildEventsMod.TOTAL, objective);
+		newScore.setScore(oldScore.getScore());
+		newScore.setDisplayText(BuildEventsMod.TOTAL.getDisplayName());
 	}
 }
