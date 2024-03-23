@@ -23,7 +23,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public class BuildEventsState extends PersistentState {
-	public static final int VERSION = 1;
+	public static final int VERSION = 2;
 
 	public final BuildEventMap buildEvents = new BuildEventMap();
 	public final Set<BuildEvent> placeEvents = Sets.newHashSet();
@@ -36,7 +36,8 @@ public class BuildEventsState extends PersistentState {
 			BuildEvent event = stringBuildEventEntry.getValue();
 			NbtCompound eventNbt = new NbtCompound();
 			eventNbt.putString("name", eventName);
-			eventNbt.putString("dimension", event.world().getRegistryKey().getValue().toString());
+			if (event.world() != null)
+				eventNbt.putString("dimension", event.world().getRegistryKey().getValue().toString());
 			Box box = event.box();
 			NbtElement from = BlockPos.CODEC
 				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) box.minX, (int) box.minY, (int) box.minZ))
@@ -57,9 +58,10 @@ public class BuildEventsState extends PersistentState {
 				type = "break";
 			}
 			eventNbt.putString("type", type);
-			if (event.predicate() != null) {
+			if (event.predicate() != null)
 				eventNbt.putString("predicate", event.predicate().toString());
-			}
+			if (event.total())
+				eventNbt.putBoolean("total", true);
 			return eventNbt;
 		};
 		NbtList activeEvents = new NbtList();
@@ -86,12 +88,18 @@ public class BuildEventsState extends PersistentState {
 					String type = eventNbt.getString("type");
 					String predicate = eventNbt.getString("predicate");
 					Identifier predicateId = predicate.isEmpty() ? null : Identifier.tryParse(predicate);
+					boolean total = eventNbt.getBoolean("total");
 
-					ServerWorld world = server.getWorld(RegistryKey.of(Registry.WORLD_KEY, Identifier.tryParse(dimension)));
-					if (world == null)
-						continue;
+					ServerWorld world;
+					if (dimension.isEmpty()) {
+						world = null;
+					} else {
+						world = server.getWorld(RegistryKey.of(Registry.WORLD_KEY, Identifier.tryParse(dimension)));
+						if (world == null)
+							continue;
+					}
 
-					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type, predicateId));
+					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type, predicateId, total));
 				}
 			}
 		};
