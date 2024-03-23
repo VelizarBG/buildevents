@@ -14,6 +14,8 @@ import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.loot.LootDataType;
 import net.minecraft.loot.LootManager;
+import net.minecraft.scoreboard.ScoreboardEntry;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
@@ -34,6 +36,7 @@ import java.util.function.UnaryOperator;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
+import static velizarbg.buildevents.BuildEventsMod.TOTAL;
 import static velizarbg.buildevents.BuildEventsMod.buildEventsState;
 import static velizarbg.buildevents.BuildEventsMod.server;
 
@@ -144,6 +147,14 @@ public class BuildEventCommand {
 						.then(attachWorldArgs.apply(literal("dimension"), worldGetter ->
 							context -> setEventWorld(context.getSource(), StringArgumentType.getString(context, "eventName"), worldGetter.apply(context))
 						))
+						.then(literal("total")
+							.then(literal("true")
+								.executes(context -> setEventTotal(context.getSource(), StringArgumentType.getString(context, "eventName"), true))
+							)
+							.then(literal("false")
+								.executes(context -> setEventTotal(context.getSource(), StringArgumentType.getString(context, "eventName"), false))
+							)
+						)
 					)
 				)
 				.then(literal("pause")
@@ -198,7 +209,7 @@ public class BuildEventCommand {
 		if (buildEventsState.buildEvents.containsKey(eventName))
 			throw EVENT_EXISTS_EXCEPTION.create(eventName);
 
-		BuildEvent event = BuildEvent.createBuildEvent(eventName, world, from, to, eventType, null);
+		BuildEvent event = BuildEvent.createBuildEvent(eventName, world, from, to, eventType, null, false);
 		buildEventsState.buildEvents.activeEvents.put(eventName, event);
 		if (event.placeObjective() != null)
 			buildEventsState.placeEvents.add(event);
@@ -297,6 +308,42 @@ public class BuildEventCommand {
 				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.world.global", eventName), true);
 			} else {
 				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.world.success", world.getRegistryKey().getValue().toString(), eventName), true);
+			}
+			return 1;
+		}
+	}
+
+	private static int setEventTotal(ServerCommandSource source, String eventName, boolean total) throws CommandSyntaxException {
+		BuildEvent event = getOrThrow(eventName);
+		replaceEvent(eventName, event.withTotal(total));
+
+		if (event.total() == total) {
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.set.ok", eventName), false);
+			return 0;
+		} else {
+			buildEventsState.markDirty();
+			if (total) {
+				Consumer<ScoreboardObjective> totalProcessor = objective -> {
+					if (objective == null)
+						return;
+					int totalCount = 0;
+					for (ScoreboardEntry scoreboardEntry : server.getScoreboard().getScoreboardEntries(objective)) {
+						totalCount += scoreboardEntry.value();
+					}
+					server.getScoreboard().getOrCreateScore(TOTAL, objective).setScore(totalCount);
+				};
+				totalProcessor.accept(event.placeObjective());
+				totalProcessor.accept(event.breakObjective());
+				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.total.true", eventName), true);
+			} else {
+				Consumer<ScoreboardObjective> totalRemover = objective -> {
+					if (objective == null)
+						return;
+					server.getScoreboard().removeScore(TOTAL, objective);
+				};
+				totalRemover.accept(event.placeObjective());
+				totalRemover.accept(event.breakObjective());
+				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.total.false", eventName), true);
 			}
 			return 1;
 		}

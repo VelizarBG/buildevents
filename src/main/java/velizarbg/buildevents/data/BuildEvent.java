@@ -24,14 +24,14 @@ import java.util.Optional;
 
 import static velizarbg.buildevents.BuildEventsMod.server;
 
-public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
+public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate, boolean total) {
 	public static final LootContextType BUILD_EVENT_ACTION = new LootContextType.Builder()
 		.require(LootContextParameters.ORIGIN)
 		.require(LootContextParameters.THIS_ENTITY)
 		.require(LootContextParameters.TOOL)
 		.build();
 
-	public BuildEvent(@Nullable ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
+	public BuildEvent(@Nullable ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate, boolean total) {
 		this(
 			world,
 			new Box(from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ()) {
@@ -42,16 +42,21 @@ public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable Scorebo
 			},
 			placeObjective,
 			breakObjective,
-			predicate
+			predicate,
+			total
 		);
 	}
 
 	public BuildEvent withPredicate(Identifier predicate) {
-		return new BuildEvent(this.world, this.box, this.placeObjective, this.breakObjective, predicate);
+		return new BuildEvent(this.world, this.box, this.placeObjective, this.breakObjective, predicate, this.total);
 	}
 
 	public BuildEvent withWorld(@Nullable ServerWorld world) {
-		return new BuildEvent(world, this.box, this.placeObjective, this.breakObjective, this.predicate);
+		return new BuildEvent(world, this.box, this.placeObjective, this.breakObjective, this.predicate, this.total);
+	}
+
+	public BuildEvent withTotal(boolean total) {
+		return new BuildEvent(world, this.box, this.placeObjective, this.breakObjective, this.predicate, total);
 	}
 
 	public boolean testPredicate(World world, PlayerEntity player, BlockPos pos, ItemStack stack) {
@@ -70,7 +75,7 @@ public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable Scorebo
 		}
 	}
 
-	public static BuildEvent createBuildEvent(String eventName, ServerWorld world, BlockPos from, BlockPos to, String type, Identifier predicate) {
+	public static BuildEvent createBuildEvent(String eventName, ServerWorld world, BlockPos from, BlockPos to, String type, Identifier predicate, boolean total) {
 		ScoreboardObjective placeObjective = null;
 		ScoreboardObjective breakObjective = null;
 		ServerScoreboard scoreboard = server.getScoreboard();
@@ -82,7 +87,7 @@ public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable Scorebo
 			String objectiveName = eventName + "_break";
 			breakObjective = getOrCreateObjective(scoreboard, objectiveName);
 		}
-		return new BuildEvent(world, from, to, placeObjective, breakObjective, predicate);
+		return new BuildEvent(world, from, to, placeObjective, breakObjective, predicate, total);
 	}
 
 	private static ScoreboardObjective getOrCreateObjective(ServerScoreboard scoreboard, String objective) {

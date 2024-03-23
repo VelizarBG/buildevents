@@ -58,9 +58,10 @@ public class BuildEventsState extends PersistentState {
 				type = "break";
 			}
 			eventNbt.putString("type", type);
-			if (event.predicate() != null) {
+			if (event.predicate() != null)
 				eventNbt.putString("predicate", event.predicate().toString());
-			}
+			if (event.total())
+				eventNbt.putBoolean("total", true);
 			return eventNbt;
 		};
 		NbtList activeEvents = new NbtList();
@@ -87,6 +88,7 @@ public class BuildEventsState extends PersistentState {
 					String type = eventNbt.getString("type");
 					String predicate = eventNbt.getString("predicate");
 					Identifier predicateId = predicate.isEmpty() ? null : Identifier.tryParse(predicate);
+					boolean total = eventNbt.getBoolean("total");
 
 					ServerWorld world;
 					if (dimension.isEmpty()) {
@@ -97,7 +99,7 @@ public class BuildEventsState extends PersistentState {
 							continue;
 					}
 
-					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type, predicateId));
+					map.put(eventName, BuildEvent.createBuildEvent(eventName, world, from, to, type, predicateId, total));
 				}
 			}
 		};

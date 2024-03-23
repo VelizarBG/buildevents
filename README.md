@@ -22,6 +22,8 @@ If an objective named `foo_place` exists prior to creating the `foo` event, then
 
 `/buildevents set <eventName> dimension ...` to change an event's dimension or make it global(every dimension).
 
+`/buildevents set <eventName> total ...` to toggle displaying the total amount of actions on the sidebar for each of the two actions.
+
 `/buildevents pause ...` to stop tracking actions until re-enabled with `/buildevents unpause ...`.
 
 `/buildevents list` to view all existing events. Optionally, end with `active` or `paused` to view those specifically.
@@ -34,6 +36,8 @@ If an objective named `foo_place` exists prior to creating the `foo` event, then
 `/buildevents set <eventName> predicate [<predicate>]`
 
 `/buildevents set <eventName> dimension (!!global|<dimension>)`
+
+`/buildevents set <eventName> total (true|false)`
 
 `/buildevents (pause|unpause) <eventName>`
 
