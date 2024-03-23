@@ -1,8 +1,10 @@
 package velizarbg.buildevents.commands;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -21,14 +23,19 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 import velizarbg.buildevents.data.BuildEvent;
+import velizarbg.buildevents.utils.ThrowingFunction;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 import static velizarbg.buildevents.BuildEventsMod.buildEventsState;
+import static velizarbg.buildevents.BuildEventsMod.server;
 
 public class BuildEventCommand {
 	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER = (context, builder) -> (
@@ -48,28 +55,48 @@ public class BuildEventCommand {
 	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_not_exist", event));
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-		Function<LiteralArgumentBuilder<ServerCommandSource>, LiteralArgumentBuilder<ServerCommandSource>> constructor =
-			(literal) -> literal
-				.executes(context -> addBuildEvent(
-					context.getSource(),
-					StringArgumentType.getString(context, "eventName"),
-					context.getSource().getWorld(),
-					BlockPosArgumentType.getBlockPos(context, "from"),
-					BlockPosArgumentType.getBlockPos(context, "to"),
-					literal.getLiteral()
-				))
-				.then(literal("in")
-					.then(argument("dimension", DimensionArgumentType.dimension())
-						.executes(context -> addBuildEvent(
+		BiFunction<
+			LiteralArgumentBuilder<ServerCommandSource>,
+			Function<
+				ThrowingFunction<
+					CommandContext<ServerCommandSource>,
+					@Nullable ServerWorld,
+					CommandSyntaxException
+				>,
+				Command<ServerCommandSource>
+			>,
+			LiteralArgumentBuilder<ServerCommandSource>
+		> attachWorldArgs =
+			(literal, commandGetter) -> literal
+				.then(argument("dimension", DimensionArgumentType.dimension())
+					.executes(commandGetter.apply(context -> DimensionArgumentType.getDimensionArgument(context, "dimension")))
+				)
+				.then(literal("!!global")
+					.executes(commandGetter.apply(context -> null))
+				);
+		UnaryOperator<LiteralArgumentBuilder<ServerCommandSource>> constructor =
+			(literal) -> {
+				Function<
+					ThrowingFunction<
+						CommandContext<ServerCommandSource>,
+						ServerWorld,
+						CommandSyntaxException
+					>,
+					Command<ServerCommandSource>
+				> getEventAdder =
+					(worldGetter) ->
+						(context) -> addBuildEvent(
 							context.getSource(),
 							StringArgumentType.getString(context, "eventName"),
-							DimensionArgumentType.getDimensionArgument(context, "dimension"),
+							worldGetter.apply(context),
 							BlockPosArgumentType.getBlockPos(context, "from"),
 							BlockPosArgumentType.getBlockPos(context, "to"),
 							literal.getLiteral()
-						))
-					)
-				);
+						);
+				return literal
+					.executes(getEventAdder.apply(context -> context.getSource().getWorld()))
+					.then(attachWorldArgs.apply(literal("in"), getEventAdder));
+			};
 
 		dispatcher.register(
 			literal("buildevents").requires(source -> source.hasPermissionLevel(2))
@@ -114,6 +141,9 @@ public class BuildEventCommand {
 								})
 							)
 						)
+						.then(attachWorldArgs.apply(literal("dimension"), worldGetter ->
+							context -> setEventWorld(context.getSource(), StringArgumentType.getString(context, "eventName"), worldGetter.apply(context))
+						))
 					)
 				)
 				.then(literal("pause")
@@ -188,7 +218,7 @@ public class BuildEventCommand {
 		buildEventsState.placeEvents.remove(event);
 		buildEventsState.breakEvents.remove(event);
 		if (removeObjectives) {
-			ServerScoreboard scoreboard = event.world().getScoreboard();
+			ServerScoreboard scoreboard = server.getScoreboard();
 			if (event.placeObjective() != null)
 				scoreboard.removeObjective(event.placeObjective());
 			if (event.breakObjective() != null)
@@ -249,6 +279,24 @@ public class BuildEventCommand {
 				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.predicate.removed", eventName), true);
 			} else {
 				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.predicate.success", predicate.toString(), eventName), true);
+			}
+			return 1;
+		}
+	}
+
+	private static int setEventWorld(ServerCommandSource source, String eventName, @Nullable ServerWorld world) throws CommandSyntaxException {
+		BuildEvent event = getOrThrow(eventName);
+		replaceEvent(eventName, event.withWorld(world));
+
+		if (event.world() == world) {
+			source.sendFeedback(() -> Text.translatable("commands.buildevents.set.ok", eventName), false);
+			return 0;
+		} else {
+			buildEventsState.markDirty();
+			if (world == null) {
+				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.world.global", eventName), true);
+			} else {
+				source.sendFeedback(() -> Text.translatable("commands.buildevents.set.world.success", world.getRegistryKey().getValue().toString(), eventName), true);
 			}
 			return 1;
 		}

@@ -6,6 +6,8 @@
     "commands.buildevents.set.ok": "Nothing changed for build event '%s'",
     "commands.buildevents.set.predicate.removed": "Removed predicate for build event '%s'",
     "commands.buildevents.set.predicate.success": "Set predicate to '%s' for build event '%s'",
+    "commands.buildevents.set.world.global": "Made build event '%s' global",
+    "commands.buildevents.set.world.success": "Set dimension to '%s' for build event '%s'",
     "commands.buildevents.pause.success": "Paused build event '%s'",
     "commands.buildevents.pause.ok": "Build event '%s' was already paused",
     "commands.buildevents.unpause.success": "Unpaused build event '%s'",

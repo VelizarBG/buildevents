@@ -17,18 +17,21 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
+import static velizarbg.buildevents.BuildEventsMod.server;
+
+public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
 	public static final LootContextType BUILD_EVENT_ACTION = new LootContextType.Builder()
 		.require(LootContextParameters.ORIGIN)
 		.require(LootContextParameters.THIS_ENTITY)
 		.require(LootContextParameters.TOOL)
 		.build();
 
-	public BuildEvent(ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
+	public BuildEvent(@Nullable ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
 		this(
 			world,
 			new Box(from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ()) {
@@ -47,12 +50,16 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 		return new BuildEvent(this.world, this.box, this.placeObjective, this.breakObjective, predicate);
 	}
 
-	public boolean testPredicate(PlayerEntity player, BlockPos pos, ItemStack stack) {
-		LootCondition predicate = this.world.getServer().getLootManager().getElement(LootDataType.PREDICATES, this.predicate);
+	public BuildEvent withWorld(@Nullable ServerWorld world) {
+		return new BuildEvent(world, this.box, this.placeObjective, this.breakObjective, this.predicate);
+	}
+
+	public boolean testPredicate(World world, PlayerEntity player, BlockPos pos, ItemStack stack) {
+		LootCondition predicate = server.getLootManager().getElement(LootDataType.PREDICATES, this.predicate);
 		if (predicate == null) {
 			return false;
 		} else {
-			LootContextParameterSet lootContextParameterSet = new LootContextParameterSet.Builder(this.world)
+			LootContextParameterSet lootContextParameterSet = new LootContextParameterSet.Builder((ServerWorld) world)
 				.add(LootContextParameters.ORIGIN, Vec3d.of(pos))
 				.add(LootContextParameters.THIS_ENTITY, player)
 				.add(LootContextParameters.TOOL, stack)
@@ -66,7 +73,7 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 	public static BuildEvent createBuildEvent(String eventName, ServerWorld world, BlockPos from, BlockPos to, String type, Identifier predicate) {
 		ScoreboardObjective placeObjective = null;
 		ScoreboardObjective breakObjective = null;
-		ServerScoreboard scoreboard = world.getScoreboard();
+		ServerScoreboard scoreboard = server.getScoreboard();
 		if (type.equals("both") || type.equals("place")) {
 			String objectiveName = eventName + "_place";
 			placeObjective = getOrCreateObjective(scoreboard, objectiveName);
