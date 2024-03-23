@@ -15,18 +15,21 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
+import static velizarbg.buildevents.BuildEventsMod.server;
+
+public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate, boolean total) {
 	public static final LootContextType BUILD_EVENT_ACTION = new LootContextType.Builder()
 		.require(LootContextParameters.ORIGIN)
 		.require(LootContextParameters.THIS_ENTITY)
 		.require(LootContextParameters.TOOL)
 		.build();
 
-	public BuildEvent(ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate) {
+	public BuildEvent(@Nullable ServerWorld world, BlockPos from, BlockPos to, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate, boolean total) {
 		this(
 			world,
 			new Box(from, to) {
@@ -37,20 +40,29 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 			},
 			placeObjective,
 			breakObjective,
-			predicate
+			predicate,
+			total
 		);
 	}
 
 	public BuildEvent withPredicate(Identifier predicate) {
-		return new BuildEvent(this.world, this.box, this.placeObjective, this.breakObjective, predicate);
+		return new BuildEvent(this.world, this.box, this.placeObjective, this.breakObjective, predicate, this.total);
 	}
 
-	public boolean testPredicate(PlayerEntity player, BlockPos pos, ItemStack stack) {
-		LootCondition predicate = this.world.getServer().getPredicateManager().get(this.predicate);
+	public BuildEvent withWorld(@Nullable ServerWorld world) {
+		return new BuildEvent(world, this.box, this.placeObjective, this.breakObjective, this.predicate, this.total);
+	}
+
+	public BuildEvent withTotal(boolean total) {
+		return new BuildEvent(world, this.box, this.placeObjective, this.breakObjective, this.predicate, total);
+	}
+
+	public boolean testPredicate(World world, PlayerEntity player, BlockPos pos, ItemStack stack) {
+		LootCondition predicate = server.getPredicateManager().get(this.predicate);
 		if (predicate == null) {
 			return false;
 		} else {
-			LootContext.Builder builder = new LootContext.Builder(this.world)
+			LootContext.Builder builder = new LootContext.Builder((ServerWorld) world)
 				.parameter(LootContextParameters.ORIGIN, Vec3d.of(pos))
 				.parameter(LootContextParameters.THIS_ENTITY, player)
 				.parameter(LootContextParameters.TOOL, stack);
@@ -58,10 +70,10 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 		}
 	}
 
-	public static BuildEvent createBuildEvent(String eventName, ServerWorld world, BlockPos from, BlockPos to, String type, Identifier predicate) {
+	public static BuildEvent createBuildEvent(String eventName, ServerWorld world, BlockPos from, BlockPos to, String type, Identifier predicate, boolean total) {
 		ScoreboardObjective placeObjective = null;
 		ScoreboardObjective breakObjective = null;
-		ServerScoreboard scoreboard = world.getScoreboard();
+		ServerScoreboard scoreboard = server.getScoreboard();
 		if (type.equals("both") || type.equals("place")) {
 			String objectiveName = eventName + "_place";
 			placeObjective = getOrCreateObjective(scoreboard, objectiveName);
@@ -70,7 +82,7 @@ public record BuildEvent(ServerWorld world, Box box, @Nullable ScoreboardObjecti
 			String objectiveName = eventName + "_break";
 			breakObjective = getOrCreateObjective(scoreboard, objectiveName);
 		}
-		return new BuildEvent(world, from, to, placeObjective, breakObjective, predicate);
+		return new BuildEvent(world, from, to, placeObjective, breakObjective, predicate, total);
 	}
 
 	private static ScoreboardObjective getOrCreateObjective(ServerScoreboard scoreboard, String objective) {
