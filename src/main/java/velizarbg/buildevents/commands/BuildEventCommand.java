@@ -12,8 +12,9 @@ import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
-import net.minecraft.loot.LootDataType;
-import net.minecraft.loot.LootManager;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.ReloadableRegistries;
 import net.minecraft.scoreboard.ScoreAccess;
 import net.minecraft.scoreboard.ScoreboardEntry;
 import net.minecraft.scoreboard.ScoreboardObjective;
@@ -52,11 +53,12 @@ public class BuildEventCommand {
 		CommandSource.suggestMatching(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
 	);
 	private static final SuggestionProvider<ServerCommandSource> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> {
-		LootManager lootManager = context.getSource().getServer().getLootManager();
-		return CommandSource.suggestIdentifiers(lootManager.getIds(LootDataType.PREDICATES), builder);
+		ReloadableRegistries.Lookup lookup = context.getSource().getServer().getReloadableRegistries();
+		return CommandSource.suggestIdentifiers(lookup.getIds(RegistryKeys.PREDICATE), builder);
 	};
-	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_exists", event));
-	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.translatable("commands.buildevents.event_not_exist", event));
+	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Text.stringifiedTranslatable("commands.buildevents.event_exists", event));
+	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.stringifiedTranslatable("commands.buildevents.event_not_exist", event));
+	private static final DynamicCommandExceptionType UNKNOWN_PREDICATE_EXCEPTION = new DynamicCommandExceptionType(predicate -> Text.stringifiedTranslatable("commands.buildevents.set.predicate.unknown", predicate));
 
 	public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
 		BiFunction<
@@ -136,11 +138,15 @@ public class BuildEventCommand {
 							.then(argument("predicate", IdentifierArgumentType.identifier())
 								.suggests(PREDICATE_SUGGESTION_PROVIDER)
 								.executes(context -> {
-									IdentifierArgumentType.getPredicateArgument(context, "predicate");
+									var predicate = IdentifierArgumentType.getIdentifier(context, "predicate");
+									if (context.getSource().getServer().getReloadableRegistries().createRegistryLookup()
+										.getOptionalEntry(RegistryKeys.PREDICATE, RegistryKey.of(RegistryKeys.PREDICATE, predicate))
+										.isEmpty())
+										throw UNKNOWN_PREDICATE_EXCEPTION.create(predicate);
 									return setEventPredicate(
 										context.getSource(),
 										StringArgumentType.getString(context, "eventName"),
-										IdentifierArgumentType.getIdentifier(context, "predicate")
+										predicate
 									);
 								})
 							)

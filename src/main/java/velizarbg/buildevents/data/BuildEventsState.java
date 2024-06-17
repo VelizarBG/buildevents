@@ -8,6 +8,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.scoreboard.ReadableScoreboardScore;
 import net.minecraft.scoreboard.ScoreAccess;
 import net.minecraft.scoreboard.ScoreHolder;
@@ -36,7 +37,7 @@ public class BuildEventsState extends PersistentState {
 	public final Set<BuildEvent> breakEvents = Sets.newHashSet();
 
 	@Override
-	public NbtCompound writeNbt(NbtCompound nbt) {
+	public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
 		Function<Map.Entry<String, BuildEvent>, NbtCompound> serializer = stringBuildEventEntry -> {
 			String eventName = stringBuildEventEntry.getKey();
 			BuildEvent event = stringBuildEventEntry.getValue();
@@ -47,10 +48,10 @@ public class BuildEventsState extends PersistentState {
 			Box box = event.box();
 			NbtElement from = BlockPos.CODEC
 				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) box.minX, (int) box.minY, (int) box.minZ))
-				.getOrThrow(false, BuildEventsMod.LOGGER::warn);
+				.getOrThrow();
 			NbtElement to = BlockPos.CODEC
 				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) box.maxX, (int) box.maxY, (int) box.maxZ))
-				.getOrThrow(false, BuildEventsMod.LOGGER::warn);
+				.getOrThrow();
 			eventNbt.put("from", from);
 			eventNbt.put("to", to);
 			boolean isPlaceEvent = event.placeObjective() != null;
@@ -88,9 +89,9 @@ public class BuildEventsState extends PersistentState {
 					String eventName = eventNbt.getString("name");
 					String dimension = eventNbt.getString("dimension");
 					BlockPos from = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("from")).map(Pair::getFirst)
-						.getOrThrow(false, BuildEventsMod.LOGGER::warn);
+						.getOrThrow();
 					BlockPos to = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("to")).map(Pair::getFirst)
-						.getOrThrow(false, BuildEventsMod.LOGGER::warn);
+						.getOrThrow();
 					String type = eventNbt.getString("type");
 					String predicate = eventNbt.getString("predicate");
 					Identifier predicateId = predicate.isEmpty() ? null : Identifier.tryParse(predicate);
@@ -130,7 +131,7 @@ public class BuildEventsState extends PersistentState {
 
 	public static BuildEventsState loadBuildEvents(MinecraftServer server) {
 		PersistentStateManager stateManager = server.getOverworld().getPersistentStateManager();
-		return stateManager.getOrCreate(new PersistentState.Type<>(BuildEventsState::new, compound -> readNbt(compound, server), null), "buildevents");
+		return stateManager.getOrCreate(new PersistentState.Type<>(BuildEventsState::new, (compound, registryLookup) -> readNbt(compound, server), null), "buildevents");
 	}
 	
 	private static void updateTotal(Scoreboard scoreboard, ScoreboardObjective objective) {

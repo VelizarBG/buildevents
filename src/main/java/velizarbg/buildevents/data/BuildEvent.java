@@ -2,12 +2,14 @@ package velizarbg.buildevents.data;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootDataType;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextType;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
@@ -60,7 +62,11 @@ public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable Scorebo
 	}
 
 	public boolean testPredicate(World world, PlayerEntity player, BlockPos pos, ItemStack stack) {
-		LootCondition predicate = server.getLootManager().getElement(LootDataType.PREDICATES, this.predicate);
+		RegistryKey<LootCondition> registryKey = RegistryKey.of(RegistryKeys.PREDICATE, this.predicate);
+		LootCondition predicate = server.getReloadableRegistries().createRegistryLookup()
+			.getOptionalEntry(RegistryKeys.PREDICATE, registryKey)
+			.map(RegistryEntry::value)
+			.orElse(null);
 		if (predicate == null) {
 			return false;
 		} else {
