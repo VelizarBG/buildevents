@@ -4,7 +4,7 @@ plugins {
 	id 'maven-publish'
 }
 
-version = project.minecraft_version+'-'+project.mod_version
+version = project.mod_version + '+' + project.minecraft_version + '-no-stapi'
 group = project.maven_group
 
 base {
@@ -23,10 +23,6 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-	modImplementation include("fr.catcore:server-translations-api:${project.server_translations}") {
-		exclude(group: "net.fabricmc.fabric-api")
-	}
 }
 
 processResources {
