@@ -140,7 +140,7 @@ public class BuildEventCommand {
 								.executes(context -> {
 									var predicate = IdentifierArgumentType.getIdentifier(context, "predicate");
 									if (context.getSource().getServer().getReloadableRegistries().createRegistryLookup()
-										.getOptionalEntry(RegistryKeys.PREDICATE, RegistryKey.of(RegistryKeys.PREDICATE, predicate))
+										.getOptionalEntry(RegistryKey.of(RegistryKeys.PREDICATE, predicate))
 										.isEmpty())
 										throw UNKNOWN_PREDICATE_EXCEPTION.create(predicate);
 									return setEventPredicate(
