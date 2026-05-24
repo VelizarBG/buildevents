@@ -9,12 +9,13 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.permission.Permission;
+import net.minecraft.command.permission.PermissionLevel;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.ReloadableRegistries;
 import net.minecraft.scoreboard.ScoreAccess;
 import net.minecraft.scoreboard.ScoreboardEntry;
 import net.minecraft.scoreboard.ScoreboardObjective;
@@ -53,8 +54,7 @@ public class BuildEventCommand {
 		CommandSource.suggestMatching(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
 	);
 	private static final SuggestionProvider<ServerCommandSource> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> {
-		ReloadableRegistries.Lookup lookup = context.getSource().getServer().getReloadableRegistries();
-		return CommandSource.suggestIdentifiers(lookup.getIds(RegistryKeys.PREDICATE), builder);
+		return context.getSource().listIdSuggestions(RegistryKeys.PREDICATE, CommandSource.SuggestedIdType.ELEMENTS, builder, context);
 	};
 	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Text.stringifiedTranslatable("commands.buildevents.event_exists", event));
 	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.stringifiedTranslatable("commands.buildevents.event_not_exist", event));
@@ -105,7 +105,7 @@ public class BuildEventCommand {
 			};
 
 		dispatcher.register(
-			literal("buildevents").requires(source -> source.hasPermissionLevel(2))
+			literal("buildevents").requires(source -> source.getPermissions().hasPermission(new Permission.Level(PermissionLevel.fromLevel(2))))
 				.then(literal("add")
 					.then(argument("eventName", StringArgumentType.word())
 						.then(argument("from", BlockPosArgumentType.blockPos())
