@@ -1,31 +1,31 @@
 {
-    "schemaVersion": 1,
-    "id": "buildevents",
-    "version": "${version}",
-    "name": "Build Events",
-    "description": "Adds build events to track block placements and breaks within an area",
-    "authors": [
-        "VelizarBG"
-    ],
-    "contact": {
-        "sources": "https://github.com/VelizarBG/buildevents",
-        "issues": "https://github.com/VelizarBG/buildevents/issues"
-    },
-    "license": "MIT",
-    "icon": "assets/buildevents/icon.png",
-    "environment": "*",
-    "entrypoints": {
-        "main": [
-            "velizarbg.buildevents.BuildEventsMod"
-        ]
-    },
-    "mixins": [
-        "buildevents.mixins.json"
-    ],
-    "depends": {
-        "minecraft": "~1.21",
-        "fabricloader": ">=0.15.0",
-        "java": ">=21",
-        "fabric-api": ">=${fabric_version}"
-    }
+    "schemaVersion":  1,
+    "id":  "buildevents",
+    "version":  "1.21.4-0.4.0",
+    "name":  "Build Events",
+    "description":  "Adds build events to track block placements and breaks within an area",
+    "authors":  [
+                    "VelizarBG"
+                ],
+    "contact":  {
+                    "sources":  "https://github.com/VelizarBG/buildevents",
+                    "issues":  "https://github.com/VelizarBG/buildevents/issues"
+                },
+    "license":  "MIT",
+    "icon":  "assets/buildevents/icon.png",
+    "environment":  "*",
+    "entrypoints":  {
+                        "main":  [
+                                     "velizarbg.buildevents.BuildEventsMod"
+                                 ]
+                    },
+    "mixins":  [
+                   "buildevents.mixins.json"
+               ],
+    "depends":  {
+                    "minecraft":  "~1.21.4",
+                    "fabricloader":  "\u003e=0.16.9",
+                    "java":  "\u003e=21",
+                    "fabric-api":  "*"
+                }
 }

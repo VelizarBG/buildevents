@@ -1,16 +1,16 @@
 {
-    "required": true,
-    "minVersion": "0.8",
-    "package": "velizarbg.buildevents.mixins",
-    "compatibilityLevel": "JAVA_21",
-    "mixins": [
-        "BlockItemMixin",
-        "BucketItemMixin",
-        "FlintAndSteelItemMixin"
-    ],
-    "client": [
-    ],
-    "injectors": {
-        "defaultRequire": 1
-    }
+  "required": true,
+  "minVersion": "0.8",
+  "package": "velizarbg.buildevents.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockItemMixin",
+    "BucketItemMixin",
+    "FlintAndSteelItemMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "buildevents-refmap.json"
 }

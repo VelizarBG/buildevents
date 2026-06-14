@@ -1,0 +1,32 @@
+{
+    "mappings":  {
+                     "velizarbg/buildevents/mixins/BlockItemMixin":  {
+                                                                         "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V":  "Lnet/minecraft/class_4711;method_23889(Lnet/minecraft/class_3222;Lnet/minecraft/class_2338;Lnet/minecraft/class_1799;)V",
+                                                                         "place(Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/util/ActionResult;":  "Lnet/minecraft/class_1747;method_7712(Lnet/minecraft/class_1750;)Lnet/minecraft/class_1269;"
+                                                                     },
+                     "velizarbg/buildevents/mixins/BucketItemMixin":  {
+                                                                          "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V":  "Lnet/minecraft/class_4711;method_23889(Lnet/minecraft/class_3222;Lnet/minecraft/class_2338;Lnet/minecraft/class_1799;)V",
+                                                                          "use":  "Lnet/minecraft/class_1755;method_7836(Lnet/minecraft/class_1937;Lnet/minecraft/class_1657;Lnet/minecraft/class_1268;)Lnet/minecraft/class_1269;"
+                                                                      },
+                     "velizarbg/buildevents/mixins/FlintAndSteelItemMixin":  {
+                                                                                 "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V":  "Lnet/minecraft/class_4711;method_23889(Lnet/minecraft/class_3222;Lnet/minecraft/class_2338;Lnet/minecraft/class_1799;)V",
+                                                                                 "useOnBlock":  "Lnet/minecraft/class_1786;method_7884(Lnet/minecraft/class_1838;)Lnet/minecraft/class_1269;"
+                                                                             }
+                 },
+    "data":  {
+                 "named:intermediary":  {
+                                            "velizarbg/buildevents/mixins/BlockItemMixin":  {
+                                                                                                "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V":  "Lnet/minecraft/class_4711;method_23889(Lnet/minecraft/class_3222;Lnet/minecraft/class_2338;Lnet/minecraft/class_1799;)V",
+                                                                                                "place(Lnet/minecraft/item/ItemPlacementContext;)Lnet/minecraft/util/ActionResult;":  "Lnet/minecraft/class_1747;method_7712(Lnet/minecraft/class_1750;)Lnet/minecraft/class_1269;"
+                                                                                            },
+                                            "velizarbg/buildevents/mixins/BucketItemMixin":  {
+                                                                                                 "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V":  "Lnet/minecraft/class_4711;method_23889(Lnet/minecraft/class_3222;Lnet/minecraft/class_2338;Lnet/minecraft/class_1799;)V",
+                                                                                                 "use":  "Lnet/minecraft/class_1755;method_7836(Lnet/minecraft/class_1937;Lnet/minecraft/class_1657;Lnet/minecraft/class_1268;)Lnet/minecraft/class_1269;"
+                                                                                             },
+                                            "velizarbg/buildevents/mixins/FlintAndSteelItemMixin":  {
+                                                                                                        "Lnet/minecraft/advancement/criterion/ItemCriterion;trigger(Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/item/ItemStack;)V":  "Lnet/minecraft/class_4711;method_23889(Lnet/minecraft/class_3222;Lnet/minecraft/class_2338;Lnet/minecraft/class_1799;)V",
+                                                                                                        "useOnBlock":  "Lnet/minecraft/class_1786;method_7884(Lnet/minecraft/class_1838;)Lnet/minecraft/class_1269;"
+                                                                                                    }
+                                        }
+             }
+}
