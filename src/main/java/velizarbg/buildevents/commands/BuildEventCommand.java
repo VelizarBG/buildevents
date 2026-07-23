@@ -14,11 +14,11 @@ import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.ReloadableRegistries;
 import net.minecraft.scoreboard.ScoreAccess;
 import net.minecraft.scoreboard.ScoreboardEntry;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
+import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -52,10 +52,9 @@ public class BuildEventCommand {
 	public static final SuggestionProvider<ServerCommandSource> SUGGESTION_PROVIDER_PAUSED = (context, builder) -> (
 		CommandSource.suggestMatching(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
 	);
-	private static final SuggestionProvider<ServerCommandSource> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> {
-		ReloadableRegistries.Lookup lookup = context.getSource().getServer().getReloadableRegistries();
-		return CommandSource.suggestIdentifiers(lookup.getIds(RegistryKeys.PREDICATE), builder);
-	};
+	private static final SuggestionProvider<ServerCommandSource> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> (
+		context.getSource().listIdSuggestions(RegistryKeys.PREDICATE, CommandSource.SuggestedIdType.ELEMENTS, builder, context)
+	);
 	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Text.stringifiedTranslatable("commands.buildevents.event_exists", event));
 	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Text.stringifiedTranslatable("commands.buildevents.event_not_exist", event));
 	private static final DynamicCommandExceptionType UNKNOWN_PREDICATE_EXCEPTION = new DynamicCommandExceptionType(predicate -> Text.stringifiedTranslatable("commands.buildevents.set.predicate.unknown", predicate));
@@ -105,7 +104,7 @@ public class BuildEventCommand {
 			};
 
 		dispatcher.register(
-			literal("buildevents").requires(source -> source.hasPermissionLevel(2))
+			literal("buildevents").requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
 				.then(literal("add")
 					.then(argument("eventName", StringArgumentType.word())
 						.then(argument("from", BlockPosArgumentType.blockPos())
