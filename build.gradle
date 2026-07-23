@@ -110,6 +110,7 @@ publishMods {
 
 	System.getenv("curse_api_key")?.with { String key ->
 		curseforge {
+			server = true
 			accessToken = key
 			projectId = project.curseforge_id
 			minecraftVersions = [*project.release_versions.split(" ")]
