@@ -43,13 +43,13 @@ import static velizarbg.buildevents.BuildEventsMod.buildEventsState;
 import static velizarbg.buildevents.BuildEventsMod.server;
 
 public class BuildEventCommand {
-	public static final SuggestionProvider<CommandSourceStack> SUGGESTION_PROVIDER = (context, builder) -> (
+	public static final SuggestionProvider<CommandSourceStack> SUGGESTION_PROVIDER = (_, builder) -> (
 		SharedSuggestionProvider.suggest(buildEventsState.buildEvents.keySet(), builder)
 	);
-	public static final SuggestionProvider<CommandSourceStack> SUGGESTION_PROVIDER_ACTIVE = (context, builder) -> (
+	public static final SuggestionProvider<CommandSourceStack> SUGGESTION_PROVIDER_ACTIVE = (_, builder) -> (
 		SharedSuggestionProvider.suggest(buildEventsState.buildEvents.activeEvents.keySet(), builder)
 	);
-	public static final SuggestionProvider<CommandSourceStack> SUGGESTION_PROVIDER_PAUSED = (context, builder) -> (
+	public static final SuggestionProvider<CommandSourceStack> SUGGESTION_PROVIDER_PAUSED = (_, builder) -> (
 		SharedSuggestionProvider.suggest(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
 	);
 	private static final SuggestionProvider<CommandSourceStack> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> (
@@ -77,7 +77,7 @@ public class BuildEventCommand {
 					.executes(commandGetter.apply(context -> DimensionArgument.getDimension(context, "dimension")))
 				)
 				.then(literal("!!global")
-					.executes(commandGetter.apply(context -> null))
+					.executes(commandGetter.apply(_ -> null))
 				);
 		UnaryOperator<LiteralArgumentBuilder<CommandSourceStack>> constructor =
 			(literal) -> {

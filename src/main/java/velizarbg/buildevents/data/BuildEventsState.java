@@ -16,7 +16,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
-import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraft.world.level.storage.SavedDataStorage;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.scores.*;
 import velizarbg.buildevents.BuildEventsMod;
@@ -127,10 +127,10 @@ public class BuildEventsState extends SavedData {
 		return buildEventsState;
 	}
 
-	// TODO move to proper Codec eventually; hack taken from net.fabricmc.fabric.impl.attachment.AttachmentPersistentState
+	// TODO move to proper Codec eventually; hack taken from net.fabricmc.fabric.impl.attachment.AttachmentSavedData
 	public static BuildEventsState loadBuildEvents(MinecraftServer server) {
-		DimensionDataStorage dataStorage = server.overworld().getDataStorage();
-		return dataStorage.computeIfAbsent(new SavedDataType<>("buildevents", BuildEventsState::new, Codec.of(new Encoder<>() {
+		SavedDataStorage dataStorage = server.getDataStorage();
+		return dataStorage.computeIfAbsent(new SavedDataType<>(Identifier.fromNamespaceAndPath("", "buildevents"), BuildEventsState::new, Codec.of(new Encoder<>() {
 			@Override
 			public <T> DataResult<T> encode(BuildEventsState input, DynamicOps<T> ops, T prefix) {
 				return DataResult.success(NbtOps.INSTANCE.convertTo(ops, input.encode()));

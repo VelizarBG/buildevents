@@ -40,10 +40,10 @@ public class BuildEventsMod implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+		CommandRegistrationCallback.EVENT.register((dispatcher, _, _) ->
 			BuildEventCommand.register(dispatcher)
 		);
-		PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
+		PlayerBlockBreakEvents.BEFORE.register((world, player, pos, _, _) -> {
 			for (BuildEvent event : buildEventsState.breakEvents) {
 				if ((event.world() == null || event.world() == world)
 					&& event.box().contains(pos.getX(), pos.getY(), pos.getZ())
