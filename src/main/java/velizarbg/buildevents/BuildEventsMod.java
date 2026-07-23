@@ -4,15 +4,15 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.scoreboard.ScoreHolder;
-import net.minecraft.scoreboard.ServerScoreboard;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.server.ServerScoreboard;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.scores.ScoreHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import velizarbg.buildevents.commands.BuildEventCommand;
@@ -22,15 +22,15 @@ import velizarbg.buildevents.data.BuildEventsState;
 public class BuildEventsMod implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("buildevents");
 	public static final ScoreHolder TOTAL = new ScoreHolder() {
-		private final Text displayName = Text.literal("Total").formatted(Formatting.BOLD);
+		private final Component displayName = Component.literal("Total").withStyle(ChatFormatting.BOLD);
 
 		@Override
-		public String getNameForScoreboard() {
+		public String getScoreboardName() {
 			return "$total";
 		}
 
 		@Override
-		public Text getDisplayName() {
+		public Component getDisplayName() {
 			return displayName;
 		}
 	};
@@ -47,10 +47,10 @@ public class BuildEventsMod implements ModInitializer {
 			for (BuildEvent event : buildEventsState.breakEvents) {
 				if ((event.world() == null || event.world() == world)
 					&& event.box().contains(pos.getX(), pos.getY(), pos.getZ())
-					&& (event.predicate() == null || event.testPredicate(world, player, pos, player.getMainHandStack()))) {
-					scoreboard.getOrCreateScore(player, event.breakObjective()).incrementScore();
+					&& (event.predicate() == null || event.testPredicate(world, player, pos, player.getMainHandItem()))) {
+					scoreboard.getOrCreatePlayerScore(player, event.breakObjective()).increment();
 					if (event.total())
-						scoreboard.getOrCreateScore(TOTAL, event.breakObjective()).incrementScore();
+						scoreboard.getOrCreatePlayerScore(TOTAL, event.breakObjective()).increment();
 				}
 			}
 			return true;
@@ -63,14 +63,14 @@ public class BuildEventsMod implements ModInitializer {
 		);
 	}
 
-	public static void onPlace(World world, PlayerEntity player, BlockPos pos, ItemStack stack) {
+	public static void onPlace(Level world, Player player, BlockPos pos, ItemStack stack) {
 		for (BuildEvent event : buildEventsState.placeEvents) {
 			if ((event.world() == null || event.world() == world)
 				&& event.box().contains(pos.getX(), pos.getY(), pos.getZ())
 				&& (event.predicate() == null || event.testPredicate(world, player, pos, stack))) {
-				scoreboard.getOrCreateScore(player, event.placeObjective()).incrementScore();
+				scoreboard.getOrCreatePlayerScore(player, event.placeObjective()).increment();
 				if (event.total())
-					scoreboard.getOrCreateScore(TOTAL, event.placeObjective()).incrementScore();
+					scoreboard.getOrCreatePlayerScore(TOTAL, event.placeObjective()).increment();
 			}
 		}
 	}

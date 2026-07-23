@@ -3,26 +3,22 @@ package velizarbg.buildevents.data;
 import com.google.common.collect.Sets;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.*;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.scoreboard.ReadableScoreboardScore;
-import net.minecraft.scoreboard.ScoreAccess;
-import net.minecraft.scoreboard.ScoreHolder;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.world.PersistentState;
-import net.minecraft.world.PersistentStateManager;
-import net.minecraft.world.PersistentStateType;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.scores.*;
 import velizarbg.buildevents.BuildEventsMod;
 
 import java.util.Map;
@@ -30,27 +26,27 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public class BuildEventsState extends PersistentState {
+public class BuildEventsState extends SavedData {
 	public static final int VERSION = 3;
 
 	public final BuildEventMap buildEvents = new BuildEventMap();
 	public final Set<BuildEvent> placeEvents = Sets.newHashSet();
 	public final Set<BuildEvent> breakEvents = Sets.newHashSet();
 
-	public NbtCompound encode() {
-		var nbt = new NbtCompound();
-		Function<Map.Entry<String, BuildEvent>, NbtCompound> serializer = stringBuildEventEntry -> {
+	public CompoundTag encode() {
+		var nbt = new CompoundTag();
+		Function<Map.Entry<String, BuildEvent>, CompoundTag> serializer = stringBuildEventEntry -> {
 			String eventName = stringBuildEventEntry.getKey();
 			BuildEvent event = stringBuildEventEntry.getValue();
-			NbtCompound eventNbt = new NbtCompound();
+			CompoundTag eventNbt = new CompoundTag();
 			eventNbt.putString("name", eventName);
 			if (event.world() != null)
-				eventNbt.putString("dimension", event.world().getRegistryKey().getValue().toString());
-			Box box = event.box();
-			NbtElement from = BlockPos.CODEC
+				eventNbt.putString("dimension", event.world().dimension().identifier().toString());
+			AABB box = event.box();
+			Tag from = BlockPos.CODEC
 				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) box.minX, (int) box.minY, (int) box.minZ))
 				.getOrThrow();
-			NbtElement to = BlockPos.CODEC
+			Tag to = BlockPos.CODEC
 				.encodeStart(NbtOps.INSTANCE, new BlockPos((int) box.maxX, (int) box.maxY, (int) box.maxZ))
 				.getOrThrow();
 			eventNbt.put("from", from);
@@ -72,10 +68,10 @@ public class BuildEventsState extends PersistentState {
 				eventNbt.putBoolean("total", true);
 			return eventNbt;
 		};
-		NbtList activeEvents = new NbtList();
+		ListTag activeEvents = new ListTag();
 		activeEvents.addAll(buildEvents.activeEvents.entrySet().stream().map(serializer).toList());
 		nbt.put("active_events", activeEvents);
-		NbtList pausedEvents = new NbtList();
+		ListTag pausedEvents = new ListTag();
 		pausedEvents.addAll(buildEvents.pausedEvents.entrySet().stream().map(serializer).toList());
 		nbt.put("paused_events", pausedEvents);
 		nbt.putInt("build_events_version", VERSION);
@@ -83,27 +79,27 @@ public class BuildEventsState extends PersistentState {
 	}
 
 	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	public static BuildEventsState decode(NbtCompound nbt, MinecraftServer server) {
+	public static BuildEventsState decode(CompoundTag nbt, MinecraftServer server) {
 		int version = nbt.getInt("build_events_version").get();
-		BiConsumer<NbtList, Map<String, BuildEvent>> deserializer = (nbtList, map) -> {
-			for (NbtElement element : nbtList) {
-				if (element instanceof NbtCompound eventNbt) {
+		BiConsumer<ListTag, Map<String, BuildEvent>> deserializer = (nbtList, map) -> {
+			for (Tag element : nbtList) {
+				if (element instanceof CompoundTag eventNbt) {
 					String eventName = eventNbt.getString("name").get();
-					String dimension = eventNbt.getString("dimension", "");
+					String dimension = eventNbt.getStringOr("dimension", "");
 					BlockPos from = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("from")).map(Pair::getFirst)
 						.getOrThrow();
 					BlockPos to = BlockPos.CODEC.decode(NbtOps.INSTANCE, eventNbt.get("to")).map(Pair::getFirst)
 						.getOrThrow();
 					String type = eventNbt.getString("type").get();
-					String predicate = eventNbt.getString("predicate", "");
+					String predicate = eventNbt.getStringOr("predicate", "");
 					Identifier predicateId = predicate.isEmpty() ? null : Identifier.tryParse(predicate);
-					boolean total = eventNbt.getBoolean("total", false);
+					boolean total = eventNbt.getBooleanOr("total", false);
 
-					ServerWorld world;
+					ServerLevel world;
 					if (dimension.isEmpty()) {
 						world = null;
 					} else {
-						world = server.getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.tryParse(dimension)));
+						world = server.getLevel(ResourceKey.create(Registries.DIMENSION, Identifier.tryParse(dimension)));
 						if (world == null)
 							continue;
 					}
@@ -118,8 +114,8 @@ public class BuildEventsState extends PersistentState {
 			}
 		};
 		BuildEventsState buildEventsState = new BuildEventsState();
-		NbtList activeEventsList = nbt.getList(version >= 1 ? "active_events" : "build_events").get();
-		NbtList pausedEventsList = nbt.getList("paused_events").get();
+		ListTag activeEventsList = nbt.getList(version >= 1 ? "active_events" : "build_events").get();
+		ListTag pausedEventsList = nbt.getList("paused_events").get();
 		deserializer.accept(activeEventsList, buildEventsState.buildEvents.activeEvents);
 		for (BuildEvent event : buildEventsState.buildEvents.activeEvents.values()) {
 			if (event.placeObjective() != null)
@@ -133,8 +129,8 @@ public class BuildEventsState extends PersistentState {
 
 	// TODO move to proper Codec eventually; hack taken from net.fabricmc.fabric.impl.attachment.AttachmentPersistentState
 	public static BuildEventsState loadBuildEvents(MinecraftServer server) {
-		PersistentStateManager stateManager = server.getOverworld().getPersistentStateManager();
-		return stateManager.getOrCreate(new PersistentStateType<>("buildevents", BuildEventsState::new, Codec.of(new Encoder<>() {
+		DimensionDataStorage dataStorage = server.overworld().getDataStorage();
+		return dataStorage.computeIfAbsent(new SavedDataType<>("buildevents", BuildEventsState::new, Codec.of(new Encoder<>() {
 			@Override
 			public <T> DataResult<T> encode(BuildEventsState input, DynamicOps<T> ops, T prefix) {
 				return DataResult.success(NbtOps.INSTANCE.convertTo(ops, input.encode()));
@@ -142,21 +138,21 @@ public class BuildEventsState extends PersistentState {
 		}, new Decoder<>() {
 			@Override
 			public <T> DataResult<Pair<BuildEventsState, T>> decode(DynamicOps<T> ops, T input) {
-				return DataResult.success(Pair.of(BuildEventsState.decode((NbtCompound) ops.convertTo(NbtOps.INSTANCE, input), server), ops.empty()));
+				return DataResult.success(Pair.of(BuildEventsState.decode((CompoundTag) ops.convertTo(NbtOps.INSTANCE, input), server), ops.empty()));
 			}
 		}), null));
 	}
 	
-	private static void updateTotal(Scoreboard scoreboard, ScoreboardObjective objective) {
+	private static void updateTotal(Scoreboard scoreboard, Objective objective) {
 		if (objective == null)
 			return;
-		ScoreHolder oldTotal = ScoreHolder.fromName(Formatting.BOLD + "Total");
-		ReadableScoreboardScore oldScore = scoreboard.getScore(oldTotal, objective);
+		ScoreHolder oldTotal = ScoreHolder.forNameOnly(ChatFormatting.BOLD + "Total");
+		ReadOnlyScoreInfo oldScore = scoreboard.getPlayerScoreInfo(oldTotal, objective);
 		if (oldScore == null)
 			return;
-		scoreboard.removeScore(oldTotal, objective);
-		ScoreAccess newScore = scoreboard.getOrCreateScore(BuildEventsMod.TOTAL, objective);
-		newScore.setScore(oldScore.getScore());
-		newScore.setDisplayText(BuildEventsMod.TOTAL.getDisplayName());
+		scoreboard.resetSinglePlayerScore(oldTotal, objective);
+		ScoreAccess newScore = scoreboard.getOrCreatePlayerScore(BuildEventsMod.TOTAL, objective);
+		newScore.set(oldScore.value());
+		newScore.display(BuildEventsMod.TOTAL.getDisplayName());
 	}
 }
