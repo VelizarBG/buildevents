@@ -97,8 +97,8 @@ publishing {
 }
 
 publishMods {
-	file = jar.archiveFile
-	additionalFiles.from(sourcesJar.archiveFile)
+	file = remapJar.archiveFile
+	additionalFiles.from(remapSourcesJar.archiveFile)
 	version = "$project.version"
 	displayName = "v$project.mod_version+$project.title_version"
 	type = STABLE
