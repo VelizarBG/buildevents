@@ -4,9 +4,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.condition.LootCondition;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.context.LootContextType;
+import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -16,6 +15,7 @@ import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.context.ContextType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -27,7 +27,7 @@ import java.util.Optional;
 import static velizarbg.buildevents.BuildEventsMod.server;
 
 public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable ScoreboardObjective placeObjective, @Nullable ScoreboardObjective breakObjective, @Nullable Identifier predicate, boolean total) {
-	public static final LootContextType BUILD_EVENT_ACTION = new LootContextType.Builder()
+	public static final ContextType BUILD_EVENT_ACTION = new ContextType.Builder()
 		.require(LootContextParameters.ORIGIN)
 		.require(LootContextParameters.THIS_ENTITY)
 		.require(LootContextParameters.TOOL)
@@ -62,20 +62,19 @@ public record BuildEvent(@Nullable ServerWorld world, Box box, @Nullable Scorebo
 	}
 
 	public boolean testPredicate(World world, PlayerEntity player, BlockPos pos, ItemStack stack) {
-		RegistryKey<LootCondition> registryKey = RegistryKey.of(RegistryKeys.PREDICATE, this.predicate);
 		LootCondition predicate = server.getReloadableRegistries().createRegistryLookup()
-			.getOptionalEntry(RegistryKeys.PREDICATE, registryKey)
+			.getOptionalEntry(RegistryKey.of(RegistryKeys.PREDICATE, this.predicate))
 			.map(RegistryEntry::value)
 			.orElse(null);
 		if (predicate == null) {
 			return false;
 		} else {
-			LootContextParameterSet lootContextParameterSet = new LootContextParameterSet.Builder((ServerWorld) world)
+			LootWorldContext lootWorldContext = new LootWorldContext.Builder((ServerWorld) world)
 				.add(LootContextParameters.ORIGIN, Vec3d.of(pos))
 				.add(LootContextParameters.THIS_ENTITY, player)
 				.add(LootContextParameters.TOOL, stack)
 				.build(BUILD_EVENT_ACTION);
-			LootContext lootContext = new LootContext.Builder(lootContextParameterSet).build(Optional.empty());
+			LootContext lootContext = new LootContext.Builder(lootWorldContext).build(Optional.empty());
 			lootContext.markActive(LootContext.predicate(predicate));
 			return predicate.test(lootContext);
 		}

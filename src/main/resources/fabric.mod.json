@@ -23,9 +23,9 @@
         "buildevents.mixins.json"
     ],
     "depends": {
-        "minecraft": "~1.21",
-        "fabricloader": ">=0.15.0",
-        "java": ">=21",
-        "fabric-api": ">=${fabric_version}"
+        "fabricloader": "${loader_dependency}",
+        "minecraft": "${minecraft_dependency}",
+        "fabric-api": ">=${fabric_api_version}",
+        "java": ">=21"
     }
 }
