@@ -53,7 +53,7 @@ public class BuildEventCommand {
 		SharedSuggestionProvider.suggest(buildEventsState.buildEvents.pausedEvents.keySet(), builder)
 	);
 	private static final SuggestionProvider<CommandSourceStack> PREDICATE_SUGGESTION_PROVIDER = (context, builder) -> (
-		context.getSource().suggestRegistryElements(Registries.PREDICATE, SharedSuggestionProvider.ElementSuggestionType.ELEMENTS, builder, context)
+		context.getSource().suggestRegistryElements(Registries.PREDICATE, SharedSuggestionProvider.ElementSuggestionType.ELEMENTS, builder, context, (_) -> true)
 	);
 	private static final DynamicCommandExceptionType EVENT_EXISTS_EXCEPTION = new DynamicCommandExceptionType(event -> Component.translatableEscape("commands.buildevents.event_exists", event));
 	private static final DynamicCommandExceptionType EVENT_NOT_EXIST_EXCEPTION = new DynamicCommandExceptionType(event -> Component.translatableEscape("commands.buildevents.event_not_exist", event));
